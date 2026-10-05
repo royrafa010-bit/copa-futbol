@@ -28,7 +28,8 @@ contraseña que solo tú conoces.
 | `app.js` | Dibuja la página y guarda los datos | No |
 | `admin.js` | Panel de configuración y contraseña | No |
 | `estilos.css` | Colores, tipografía y diseño | Solo si quieres cambiar el aspecto |
-| `Publicar cambios.cmd` | Sube los cambios a GitHub en un doble clic | No |
+| `Publicar en GitHub.cmd` | **Sube los cambios a GitHub en un doble clic, sin contraseña** | No |
+| `Publicar cambios.cmd` | Igual, pero con el inicio de sesión normal de Git (respaldo) | No |
 
 ## Cómo ver la página
 
@@ -131,24 +132,25 @@ falta un servidor con usuarios y permisos.
 
 ## Publicar en internet (GitHub Pages) — enlace https
 
-Dirección final: **https://royrafa010-bit.github.io/copa-futbol/**
+**La página ya está publicada:** <https://royrafa010-bit.github.io/copa-futbol/>
+Repositorio: <https://github.com/royrafa010-bit/copa-futbol>
 
-### Primera vez
-
-1. Entra en <https://github.com/new>, pon de nombre **copa-futbol**, marca **Public**, **no** añadas README
-   y pulsa *Create repository*.
-2. En la carpeta del proyecto, doble clic en **Publicar cambios.cmd** (o `git push -u origin main`).
-   Se abrirá el navegador para iniciar sesión con tu cuenta **royrafa010-bit**.
-3. En GitHub: **Settings → Pages → Source: Deploy from a branch → Branch: main, /(root) → Save**.
-4. Espera un minuto y abre <https://royrafa010-bit.github.io/copa-futbol/>.
-
-### Cómo actualizar los resultados publicados
+### Cómo actualizar los resultados (un solo doble clic)
 
 Los visitantes ven el archivo `datos.js` del repositorio, **no** los cambios guardados en tu navegador:
 
 1. En la página: **⚙️ Administrar → Datos → Descargar datos.js**.
-2. Doble clic en **Publicar cambios.cmd**.
-3. En un minuto los cambios se ven en el enlace.
+2. Doble clic en **`Publicar en GitHub.cmd`** (el script copia el `datos.js` nuevo, guarda el cambio en Git,
+   lo sube y comprueba que la página responde). **No pide contraseña**: usa el token que Windows ya tiene guardado.
+
+También puedes ejecutarlo con un mensaje propio:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File publicar_github.ps1 -Mensaje "Jornada 3"
+```
+
+**Alternativa** si algún día falta el token: doble clic en `Publicar cambios.cmd` (ese usa el inicio de sesión
+normal de Git y puede pedirte autorizar en el navegador).
 
 ### Qué es público y qué no
 
