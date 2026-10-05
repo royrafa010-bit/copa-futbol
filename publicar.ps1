@@ -1,4 +1,4 @@
-# Publica en GitHub Pages los cambios que hiciste desde el panel de la página.
+﻿# Publica en GitHub Pages los cambios que hiciste desde el panel de la página.
 #
 # CÓMO SE USA
 #   1) En la página:  ⚙️ Administrar  ->  Datos  ->  "Descargar datos.js"  (si cambiaste datos)
