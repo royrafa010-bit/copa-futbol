@@ -1,0 +1,11 @@
+# Archivos que Git debe ignorar
+Thumbs.db
+desktop.ini
+.DS_Store
+*.tmp
+*.log
+
+# Configuración local del editor (se conserva la compartida)
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json

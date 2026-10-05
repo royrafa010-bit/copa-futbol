@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Copa Nacional de Fútbol — Resultados</title>
+  <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+
+  <header class="cabecera">
+    <div class="cabecera-texto">
+      <p class="etiqueta-copa">Resultados en vivo</p>
+      <h1 id="titulo-torneo">Copa</h1>
+      <p id="subtitulo-torneo" class="subtitulo"></p>
+      <p id="actualizado" class="actualizado"></p>
+    </div>
+    <div id="resumen" class="resumen"></div>
+  </header>
+
+  <nav class="pestanas">
+    <button class="pestana activa" data-panel="posiciones">Tabla de posiciones</button>
+    <button class="pestana" data-panel="grupos">Fase de grupos</button>
+    <button class="pestana" data-panel="eliminatorias">Eliminatorias</button>
+    <button class="pestana" data-panel="goleadores">Goleadores</button>
+    <button class="pestana" data-panel="amarillas">🟨 Amarillas</button>
+    <button class="pestana" data-panel="rojas">🟥 Rojas</button>
+    <span class="espaciador"></span>
+    <button class="accion" onclick="window.print()">Imprimir</button>
+    <button class="accion" onclick="location.reload()">Actualizar</button>
+    <button id="btn-admin" class="accion destacada">⚙️ Administrar</button>
+  </nav>
+
+  <main>
+    <section id="panel-posiciones" class="panel">
+      <div id="lista-posiciones" class="rejilla-posiciones"></div>
+    </section>
+
+    <section id="panel-grupos" class="panel" hidden>
+      <div id="lista-grupos" class="rejilla"></div>
+    </section>
+
+    <section id="panel-eliminatorias" class="panel" hidden>
+      <div id="lista-eliminatorias" class="rejilla"></div>
+    </section>
+
+    <section id="panel-goleadores" class="panel" hidden>
+      <div id="lista-goleadores" class="rejilla"></div>
+    </section>
+
+    <section id="panel-amarillas" class="panel" hidden>
+      <div id="lista-amarillas" class="rejilla"></div>
+    </section>
+
+    <section id="panel-rojas" class="panel" hidden>
+      <div id="lista-rojas" class="rejilla"></div>
+    </section>
+
+    <aside class="ayuda">
+      <strong>¿Cómo se configura?</strong>
+      Pulsa <strong>⚙️ Administrar</strong> y entra con tu contraseña. Desde ahí puedes cambiar el nombre del
+      torneo, los equipos, los partidos y marcadores, los goleadores y las tarjetas amarillas y rojas.
+      Los cambios se guardan en el navegador y <strong>la tabla de posiciones de los dos grupos se
+      recalcula sola</strong>. Solo tú puedes entrar.
+    </aside>
+  </main>
+
+  <footer class="pie">
+    <span id="pie-texto">Copa Nacional de Fútbol</span> · Página de práctica · Hecha con HTML, CSS y JavaScript
+  </footer>
+
+  <!-- ------------------------- acceso al panel ------------------------- -->
+  <div id="modal-clave" class="overlay" hidden>
+    <div class="caja-modal">
+      <h2 id="titulo-clave">Panel de administración</h2>
+      <p id="texto-clave" class="nota-admin"></p>
+      <label class="campo-admin">
+        <span class="campo-etiqueta">Contraseña</span>
+        <input id="clave-1" type="password" autocomplete="current-password">
+      </label>
+      <label class="campo-admin" id="campo-clave-2">
+        <span class="campo-etiqueta">Repite la contraseña</span>
+        <input id="clave-2" type="password" autocomplete="new-password">
+      </label>
+      <p id="error-clave" class="error"></p>
+      <div class="acciones-admin">
+        <button id="btn-entrar" class="btn-admin principal" type="button">Entrar</button>
+        <button id="btn-cancelar-clave" class="btn-admin secundario" type="button">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ------------------------- panel de configuración ------------------------- -->
+  <div id="panel-admin" class="overlay" hidden>
+    <div class="panel-caja">
+      <header class="panel-cabecera">
+        <h2>Configuración de la copa</h2>
+        <span id="estado-guardado" class="estado-guardado"></span>
+        <span class="espaciador"></span>
+        <button id="btn-cerrar-sesion" class="btn-admin secundario" type="button">Cerrar sesión</button>
+        <button id="btn-cerrar-admin" class="btn-admin principal" type="button">Ver la página</button>
+      </header>
+
+      <nav id="menu-admin" class="menu-admin">
+        <button class="pestana-admin activa" data-seccion="torneo" type="button">Torneo</button>
+        <button class="pestana-admin" data-seccion="equipos" type="button">Equipos</button>
+        <button class="pestana-admin" data-seccion="partidos" type="button">Partidos</button>
+        <button class="pestana-admin" data-seccion="goleadores" type="button">Goleadores</button>
+        <button class="pestana-admin" data-seccion="amarillas" type="button">🟨 Amarillas</button>
+        <button class="pestana-admin" data-seccion="rojas" type="button">🟥 Rojas</button>
+        <button class="pestana-admin" data-seccion="seguridad" type="button">Seguridad</button>
+        <button class="pestana-admin" data-seccion="datos" type="button">Datos</button>
+      </nav>
+
+      <div class="panel-cuerpo">
+        <div id="seccion-torneo" class="seccion-admin"></div>
+        <div id="seccion-equipos" class="seccion-admin" hidden></div>
+        <div id="seccion-partidos" class="seccion-admin" hidden></div>
+        <div id="seccion-goleadores" class="seccion-admin" hidden></div>
+        <div id="seccion-amarillas" class="seccion-admin" hidden></div>
+        <div id="seccion-rojas" class="seccion-admin" hidden></div>
+        <div id="seccion-seguridad" class="seccion-admin" hidden></div>
+        <div id="seccion-datos" class="seccion-admin" hidden></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- sugerencias de equipos para los formularios del panel -->
+  <datalist id="lista-equipos"></datalist>
+
+  <!-- El orden importa: datos → dibujo de la página → panel de administración -->
+  <script src="datos.js"></script>
+  <script src="app.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>

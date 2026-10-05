@@ -1,0 +1,682 @@
+/* ============================================================================
+   admin.js — panel de configuración dentro de la propia página
+   ----------------------------------------------------------------------------
+   Solo se entra con la contraseña. Todo lo que cambies aquí se guarda en este
+   navegador (localStorage) y la página se redibuja al instante.
+
+   AVISO IMPORTANTE SOBRE LA SEGURIDAD
+   Esto es una página estática: la contraseña protege de que un visitante
+   curioso toque tus datos, pero NO es seguridad real. Cualquiera que tenga el
+   archivo en su computadora puede leer el código. Si algún día la publicas en
+   internet y necesitas protección de verdad, hace falta un servidor.
+   ============================================================================ */
+
+/* ============================== SHA-256 en JavaScript puro ==============================
+   Se implementa aquí para que funcione incluso abriendo el archivo con doble
+   clic (file://), donde el navegador no ofrece la API de criptografía.
+   ======================================================================================== */
+function sha256(texto) {
+  const bytes = new TextEncoder().encode(texto);
+  const rotr = (n, x) => (x >>> n) | (x << (32 - n));
+  const K = [
+    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+    0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+    0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+    0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+    0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2,
+  ];
+  let H = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19];
+
+  const largo = bytes.length;
+  const conRelleno = new Uint8Array((((largo + 8) >> 6) + 1) * 64);
+  conRelleno.set(bytes);
+  conRelleno[largo] = 0x80;
+
+  const vista = new DataView(conRelleno.buffer);
+  const bits = largo * 8;
+  vista.setUint32(conRelleno.length - 8, Math.floor(bits / 4294967296), false);
+  vista.setUint32(conRelleno.length - 4, bits >>> 0, false);
+
+  const w = new Uint32Array(64);
+  for (let i = 0; i < conRelleno.length; i += 64) {
+    for (let t = 0; t < 16; t++) w[t] = vista.getUint32(i + t * 4, false);
+    for (let t = 16; t < 64; t++) {
+      const s0 = rotr(7, w[t - 15]) ^ rotr(18, w[t - 15]) ^ (w[t - 15] >>> 3);
+      const s1 = rotr(17, w[t - 2]) ^ rotr(19, w[t - 2]) ^ (w[t - 2] >>> 10);
+      w[t] = (w[t - 16] + s0 + w[t - 7] + s1) >>> 0;
+    }
+    let [a, b, c, d, e, f, g, h] = H;
+    for (let t = 0; t < 64; t++) {
+      const S1 = rotr(6, e) ^ rotr(11, e) ^ rotr(25, e);
+      const ch = (e & f) ^ (~e & g);
+      const t1 = (h + S1 + ch + K[t] + w[t]) >>> 0;
+      const S0 = rotr(2, a) ^ rotr(13, a) ^ rotr(22, a);
+      const maj = (a & b) ^ (a & c) ^ (b & c);
+      const t2 = (S0 + maj) >>> 0;
+      h = g; g = f; f = e; e = (d + t1) >>> 0;
+      d = c; c = b; b = a; a = (t1 + t2) >>> 0;
+    }
+    H = [
+      (H[0] + a) >>> 0, (H[1] + b) >>> 0, (H[2] + c) >>> 0, (H[3] + d) >>> 0,
+      (H[4] + e) >>> 0, (H[5] + f) >>> 0, (H[6] + g) >>> 0, (H[7] + h) >>> 0,
+    ];
+  }
+  return H.map((x) => x.toString(16).padStart(8, "0")).join("");
+}
+
+/* ============================== seguridad ============================== */
+const CLAVE_SEGURIDAD = "copa-futbol-seguridad-v1";
+const CLAVE_SESION = "copa-sesion";
+const MINIMO_CLAVE = 4;
+const MAX_INTENTOS = 5;
+const BLOQUEO_MS = 30000;
+
+let modoCrear = false;
+let intentosFallidos = 0;
+let bloqueadoHasta = 0;
+
+function leerSeguridad() {
+  try {
+    return JSON.parse(localStorage.getItem(CLAVE_SEGURIDAD) || "null");
+  } catch (e) {
+    return null;
+  }
+}
+
+function guardarSeguridad(clave) {
+  const sal = nuevaSal();
+  try {
+    localStorage.setItem(CLAVE_SEGURIDAD, JSON.stringify({ sal: sal, hash: sha256(sal + clave), desde: new Date().toISOString() }));
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function borrarSeguridad() {
+  try {
+    localStorage.removeItem(CLAVE_SEGURIDAD);
+  } catch (e) { /* nada */ }
+}
+
+function nuevaSal() {
+  try {
+    const a = new Uint8Array(16);
+    crypto.getRandomValues(a);
+    return [...a].map((x) => x.toString(16).padStart(2, "0")).join("");
+  } catch (e) {
+    return String(Math.random()).slice(2) + String(Date.now());
+  }
+}
+
+function claveInicialDeArchivo() {
+  return typeof CONFIG_ADMIN === "object" && CONFIG_ADMIN && CONFIG_ADMIN.claveInicial
+    ? String(CONFIG_ADMIN.claveInicial)
+    : "";
+}
+
+function claveCorrecta(clave) {
+  const seg = leerSeguridad();
+  if (seg && seg.hash) return sha256(seg.sal + clave) === seg.hash;
+  const inicial = claveInicialDeArchivo();
+  if (inicial) return clave === inicial;
+  return false;
+}
+
+function hayClaveConfigurada() {
+  return Boolean(leerSeguridad()) || Boolean(claveInicialDeArchivo());
+}
+
+function sesionActiva() {
+  try {
+    return sessionStorage.getItem(CLAVE_SESION) === "ok";
+  } catch (e) {
+    return false;
+  }
+}
+
+function iniciarSesion() {
+  try {
+    sessionStorage.setItem(CLAVE_SESION, "ok");
+  } catch (e) { /* nada */ }
+}
+
+function cerrarSesion() {
+  try {
+    sessionStorage.removeItem(CLAVE_SESION);
+  } catch (e) { /* nada */ }
+}
+
+/* ============================== ayudas de interfaz ============================== */
+function avisarGuardado(mensaje) {
+  const el = document.getElementById("estado-guardado");
+  if (!el) return;
+  const hora = new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  el.textContent = (mensaje || "Guardado") + " a las " + hora;
+  el.classList.add("flash");
+  setTimeout(() => el.classList.remove("flash"), 1200);
+}
+
+function trasCambio(mensaje) {
+  guardarEstado();
+  renderizarTodo();
+  avisarGuardado(mensaje);
+}
+
+function campoAdmin(etiqueta, valor, alCambiar, tipo, lista) {
+  const caja = crear("label", "campo-admin");
+  caja.appendChild(crear("span", "campo-etiqueta", etiqueta));
+  const input = document.createElement("input");
+  input.type = tipo || "text";
+  input.value = valor === null || valor === undefined ? "" : valor;
+  if (lista) input.setAttribute("list", lista);
+  input.addEventListener("change", () => alCambiar(input.value));
+  caja.appendChild(input);
+  return caja;
+}
+
+function boton(texto, clase, accion) {
+  const b = document.createElement("button");
+  b.type = "button";
+  b.className = "btn-admin " + (clase || "");
+  b.textContent = texto;
+  b.addEventListener("click", accion);
+  return b;
+}
+
+function celdaInput(valor, alCambiar, tipo, ancho, lista) {
+  const td = document.createElement("td");
+  const input = document.createElement("input");
+  input.type = tipo || "text";
+  input.className = "campo-tabla";
+  input.value = valor === null || valor === undefined ? "" : valor;
+  if (ancho) input.style.width = ancho;
+  if (lista) input.setAttribute("list", lista);
+  input.addEventListener("change", () => alCambiar(input.value));
+  td.appendChild(input);
+  return td;
+}
+
+function celdaBotones(acciones) {
+  const td = document.createElement("td");
+  td.className = "celda-botones";
+  acciones.forEach((a) => td.appendChild(boton(a.texto, a.clase, a.accion)));
+  return td;
+}
+
+function tablaAdmin(cabeceras, filas) {
+  const tabla = crear("table", "tabla-admin");
+  const thead = document.createElement("thead");
+  const trh = document.createElement("tr");
+  cabeceras.forEach((c) => trh.appendChild(crear("th", null, c)));
+  thead.appendChild(trh);
+  tabla.appendChild(thead);
+  const tbody = document.createElement("tbody");
+  filas.forEach((f) => tbody.appendChild(f));
+  tabla.appendChild(tbody);
+  return tabla;
+}
+
+function filaConCeldas(celdas) {
+  const tr = document.createElement("tr");
+  celdas.forEach((c) => tr.appendChild(c));
+  return tr;
+}
+
+function rellenarDatalist() {
+  const lista = document.getElementById("lista-equipos");
+  if (!lista) return;
+  lista.innerHTML = "";
+  EQUIPOS.forEach((e) => {
+    const opcion = document.createElement("option");
+    opcion.value = e.id;
+    opcion.label = e.nombre + " (grupo " + e.grupo + ")";
+    lista.appendChild(opcion);
+  });
+}
+
+/* ============================== secciones del panel ============================== */
+function construirTorneo() {
+  const caja = document.getElementById("seccion-torneo");
+  caja.innerHTML = "";
+  const rejilla = crear("div", "rejilla-campos");
+
+  rejilla.appendChild(campoAdmin("Nombre del torneo", TORNEO.nombre, (v) => { TORNEO.nombre = v; trasCambio("Torneo"); }));
+  rejilla.appendChild(campoAdmin("Temporada", TORNEO.temporada, (v) => { TORNEO.temporada = v; trasCambio("Torneo"); }));
+  rejilla.appendChild(campoAdmin("Descripción", TORNEO.descripcion, (v) => { TORNEO.descripcion = v; trasCambio("Torneo"); }));
+  rejilla.appendChild(campoAdmin("Última actualización", TORNEO.actualizado, (v) => { TORNEO.actualizado = v; trasCambio("Torneo"); }));
+  rejilla.appendChild(campoAdmin("Puntos por victoria", TORNEO.puntosVictoria, (v) => { TORNEO.puntosVictoria = Number(v) || 0; trasCambio("Puntos"); }, "number"));
+  rejilla.appendChild(campoAdmin("Puntos por empate", TORNEO.puntosEmpate, (v) => { TORNEO.puntosEmpate = Number(v) || 0; trasCambio("Puntos"); }, "number"));
+  rejilla.appendChild(campoAdmin("Clasifican por grupo", TORNEO.clasificanPorGrupo, (v) => { TORNEO.clasificanPorGrupo = Number(v) || 0; trasCambio("Clasificados"); }, "number"));
+  caja.appendChild(rejilla);
+
+  const acciones = crear("div", "acciones-admin");
+  acciones.appendChild(boton("Poner la fecha de hoy", "secundario", () => {
+    TORNEO.actualizado = new Date().toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" });
+    construirTorneo();
+    trasCambio("Fecha actualizada");
+  }));
+  caja.appendChild(acciones);
+  caja.appendChild(crear("p", "nota-admin", "Los campos se guardan al salir de cada casilla (o al pulsar Enter)."));
+}
+
+function construirEquipos() {
+  const caja = document.getElementById("seccion-equipos");
+  caja.innerHTML = "";
+
+  const acciones = crear("div", "acciones-admin");
+  acciones.appendChild(boton("+ Añadir equipo", "principal", () => {
+    let n = 1;
+    while (EQUIPOS.some((e) => e.id === "equipo" + n)) n++;
+    EQUIPOS.push({ id: "equipo" + n, nombre: "Equipo " + n, grupo: "A" });
+    construirEquipos();
+    rellenarDatalist();
+    trasCambio("Equipo añadido");
+  }));
+  caja.appendChild(acciones);
+
+  const filas = EQUIPOS.map((equipo) => {
+    const indice = EQUIPOS.indexOf(equipo);
+    return filaConCeldas([
+      celdaInput(equipo.id, (v) => {
+        const anterior = equipo.id;
+        equipo.id = v.trim();
+        if (anterior !== equipo.id) {
+          PARTIDOS.forEach((p) => {
+            if (p.local === anterior) p.local = equipo.id;
+            if (p.visitante === anterior) p.visitante = equipo.id;
+          });
+        }
+        guardarEstado();
+        renderizarTodo();
+        rellenarDatalist();
+        avisarGuardado("Equipo");
+      }, "text", "90px"),
+      celdaInput(equipo.nombre, (v) => { equipo.nombre = v; trasCambio("Equipo"); }, "text", "200px"),
+      celdaInput(equipo.grupo, (v) => { equipo.grupo = v; construirEquipos(); trasCambio("Grupo"); }, "text", "60px"),
+      celdaBotones([
+        { texto: "✕", clase: "peligro", accion: () => { EQUIPOS.splice(indice, 1); construirEquipos(); rellenarDatalist(); trasCambio("Equipo eliminado"); } },
+      ]),
+    ]);
+  });
+
+  caja.appendChild(tablaAdmin(["id", "Nombre", "Grupo", ""], filas));
+  caja.appendChild(crear("p", "nota-admin", "El id es el que se usa en los partidos. Si lo cambias, los partidos se actualizan solos."));
+}
+
+function construirPartidos() {
+  const caja = document.getElementById("seccion-partidos");
+  caja.innerHTML = "";
+
+  const acciones = crear("div", "acciones-admin");
+  acciones.appendChild(boton("+ Añadir partido", "principal", () => {
+    PARTIDOS.push({ fase: "Grupo A", jornada: "Jornada 1", fecha: "", local: "", visitante: "", golesLocal: null, golesVisitante: null });
+    construirPartidos();
+    trasCambio("Partido añadido");
+  }));
+  acciones.appendChild(crear("span", "nota-admin", "Deja los goles vacíos si el partido no se ha jugado."));
+  caja.appendChild(acciones);
+
+  const fases = [...new Set(PARTIDOS.map((p) => p.fase))];
+  fases.forEach((fase) => {
+    const titulo = crear("h3", "titulo-fase", fase + " (" + PARTIDOS.filter((p) => p.fase === fase).length + ")");
+    caja.appendChild(titulo);
+
+    const filas = PARTIDOS.filter((p) => p.fase === fase).map((p) => {
+      const indice = PARTIDOS.indexOf(p);
+      const cambiarGoles = (lado) => (v) => {
+        const valor = v.trim();
+        if (lado === "local") p.golesLocal = valor === "" ? null : Math.max(0, Math.round(Number(valor)));
+        else p.golesVisitante = valor === "" ? null : Math.max(0, Math.round(Number(valor)));
+        guardarEstado();
+        renderizarTodo();
+        avisarGuardado("Marcador");
+      };
+      return filaConCeldas([
+        celdaInput(p.fase, (v) => { p.fase = v; construirPartidos(); trasCambio("Partido"); }, "text", "130px"),
+        celdaInput(p.jornada, (v) => { p.jornada = v; construirPartidos(); trasCambio("Jornada"); }, "text", "120px"),
+        celdaInput(p.fecha, (v) => { p.fecha = v; trasCambio("Fecha"); }, "text", "120px"),
+        celdaInput(p.local, (v) => { p.local = v.trim(); guardarEstado(); renderizarTodo(); avisarGuardado("Partido"); }, "text", "130px", "lista-equipos"),
+        celdaInput(p.visitante, (v) => { p.visitante = v.trim(); guardarEstado(); renderizarTodo(); avisarGuardado("Partido"); }, "text", "130px", "lista-equipos"),
+        celdaInput(p.golesLocal, cambiarGoles("local"), "number", "60px"),
+        celdaInput(p.golesVisitante, cambiarGoles("visitante"), "number", "60px"),
+        celdaBotones([
+          { texto: "✕", clase: "peligro", accion: () => { PARTIDOS.splice(indice, 1); construirPartidos(); trasCambio("Partido eliminado"); } },
+        ]),
+      ]);
+    });
+
+    caja.appendChild(tablaAdmin(["Fase", "Jornada", "Fecha", "Local", "Visitante", "GL", "GV", ""], filas));
+  });
+}
+
+function construirGoleadores() {
+  const caja = document.getElementById("seccion-goleadores");
+  caja.innerHTML = "";
+
+  const acciones = crear("div", "acciones-admin");
+  acciones.appendChild(boton("+ Añadir goleador", "principal", () => {
+    GOLEADORES.push({ jugador: "", equipo: EQUIPOS[0] ? EQUIPOS[0].id : "", goles: 0 });
+    construirGoleadores();
+    trasCambio("Goleador añadido");
+  }));
+  caja.appendChild(acciones);
+
+  const filas = GOLEADORES.map((g) => {
+    const indice = GOLEADORES.indexOf(g);
+    return filaConCeldas([
+      celdaInput(g.jugador, (v) => { g.jugador = v; trasCambio("Goleador"); }, "text", "220px"),
+      celdaInput(g.equipo, (v) => { g.equipo = v.trim(); trasCambio("Equipo"); }, "text", "120px", "lista-equipos"),
+      celdaInput(g.goles, (v) => { g.goles = Number(v) || 0; trasCambio("Goles"); }, "number", "70px"),
+      celdaBotones([
+        { texto: "✕", clase: "peligro", accion: () => { GOLEADORES.splice(indice, 1); construirGoleadores(); trasCambio("Goleador eliminado"); } },
+      ]),
+    ]);
+  });
+
+  caja.appendChild(tablaAdmin(["Jugador", "Equipo", "Goles", ""], filas));
+  caja.appendChild(crear("p", "nota-admin", "La tabla se muestra ordenada de mayor a menor cantidad de goles."));
+}
+
+function construirTarjetas(clave, contenedorId, tipo, titulo) {
+  const lista = clave === "amarillas" ? AMARILLAS : ROJAS;
+  const caja = document.getElementById(contenedorId);
+  caja.innerHTML = "";
+
+  const acciones = crear("div", "acciones-admin");
+  acciones.appendChild(boton("+ Añadir tarjeta", "principal", () => {
+    lista.push({ jugador: "", equipo: EQUIPOS[0] ? EQUIPOS[0].id : "", cantidad: 1 });
+    construirTarjetas(clave, contenedorId, tipo, titulo);
+    trasCambio("Tarjeta añadida");
+  }));
+  caja.appendChild(acciones);
+
+  const mover = (indice, paso) => {
+    const destino = indice + paso;
+    if (destino < 0 || destino >= lista.length) return;
+    const item = lista.splice(indice, 1)[0];
+    lista.splice(destino, 0, item);
+    construirTarjetas(clave, contenedorId, tipo, titulo);
+    trasCambio("Orden cambiado");
+  };
+
+  const filas = lista.map((t) => {
+    const indice = lista.indexOf(t);
+    return filaConCeldas([
+      celdaInput(t.jugador, (v) => { t.jugador = v; trasCambio("Tarjeta"); }, "text", "220px"),
+      celdaInput(t.equipo, (v) => { t.equipo = v.trim(); trasCambio("Equipo"); }, "text", "120px", "lista-equipos"),
+      celdaInput(t.cantidad, (v) => { t.cantidad = Number(v) || 0; trasCambio("Cantidad"); }, "number", "70px"),
+      celdaBotones([
+        { texto: "↑", clase: "secundario", accion: () => mover(indice, -1) },
+        { texto: "↓", clase: "secundario", accion: () => mover(indice, 1) },
+        { texto: "✕", clase: "peligro", accion: () => { lista.splice(indice, 1); construirTarjetas(clave, contenedorId, tipo, titulo); trasCambio("Tarjeta eliminada"); } },
+      ]),
+    ]);
+  });
+
+  caja.appendChild(tablaAdmin(["Jugador", "Equipo", "Cantidad", "Orden"], filas));
+  caja.appendChild(crear("p", "nota-admin", "Se muestran en este mismo orden: usa ↑ y ↓ para cambiarlo."));
+}
+
+function construirSeguridad() {
+  const caja = document.getElementById("seccion-seguridad");
+  caja.innerHTML = "";
+
+  if (!hayClaveConfigurada()) {
+    caja.appendChild(crear("p", "nota-admin", "Todavía no hay contraseña. Cierra el panel y vuelve a abrirlo para crearla."));
+  }
+
+  const rejilla = crear("div", "rejilla-campos");
+  const cActual = campoAdmin("Contraseña actual", "", () => {}, "password");
+  const cNueva = campoAdmin("Contraseña nueva", "", () => {}, "password");
+  const cRepetir = campoAdmin("Repetir la nueva", "", () => {}, "password");
+  rejilla.appendChild(cActual);
+  rejilla.appendChild(cNueva);
+  rejilla.appendChild(cRepetir);
+  caja.appendChild(rejilla);
+
+  const mensaje = crear("p", "nota-admin", "");
+  const acciones = crear("div", "acciones-admin");
+  acciones.appendChild(boton("Cambiar contraseña", "principal", () => {
+    const actual = cActual.querySelector("input").value;
+    const nueva = cNueva.querySelector("input").value;
+    const repetir = cRepetir.querySelector("input").value;
+    if (hayClaveConfigurada() && !claveCorrecta(actual)) { mensaje.textContent = "La contraseña actual no es correcta."; return; }
+    if (nueva.length < MINIMO_CLAVE) { mensaje.textContent = "La contraseña nueva debe tener al menos " + MINIMO_CLAVE + " caracteres."; return; }
+    if (nueva !== repetir) { mensaje.textContent = "Las dos contraseñas nuevas no coinciden."; return; }
+    guardarSeguridad(nueva);
+    mensaje.textContent = "Contraseña cambiada correctamente.";
+    construirSeguridad();
+  }));
+  acciones.appendChild(boton("Quitar contraseña", "peligro", () => {
+    borrarSeguridad();
+    mensaje.textContent = "Contraseña eliminada. La próxima vez podrás crear una nueva.";
+  }));
+  caja.appendChild(acciones);
+  caja.appendChild(mensaje);
+  caja.appendChild(crear("p", "nota-admin", "La contraseña se guarda cifrada (SHA-256) en este navegador. Si la olvidas, borra los datos del sitio en el navegador o limpia el almacenamiento desde la consola: localStorage.removeItem('" + CLAVE_SEGURIDAD + "')."));
+}
+
+function descargarArchivo(nombre, contenido, tipoMime) {
+  const blob = new Blob([contenido], { type: tipoMime || "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = nombre;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function generarDatosJS() {
+  const fecha = new Date().toLocaleString("es-ES");
+  return [
+    "/* Datos de la copa — generado desde el panel de la página el " + fecha + ".",
+    "   Reemplaza con este archivo el datos.js del proyecto para conservar los datos",
+    "   aunque borres el almacenamiento del navegador. */",
+    "",
+    "const TORNEO = " + JSON.stringify(TORNEO, null, 2) + ";",
+    "",
+    "const CONFIG_ADMIN = " + JSON.stringify(CONFIG_ADMIN, null, 2) + ";",
+    "",
+    "const EQUIPOS = " + JSON.stringify(EQUIPOS, null, 2) + ";",
+    "",
+    "const PARTIDOS = " + JSON.stringify(PARTIDOS, null, 2) + ";",
+    "",
+    "const GOLEADORES = " + JSON.stringify(GOLEADORES, null, 2) + ";",
+    "",
+    "const AMARILLAS = " + JSON.stringify(AMARILLAS, null, 2) + ";",
+    "",
+    "const ROJAS = " + JSON.stringify(ROJAS, null, 2) + ";",
+    "",
+  ].join("\n");
+}
+
+function construirDatos() {
+  const caja = document.getElementById("seccion-datos");
+  caja.innerHTML = "";
+
+  const publicado = typeof location !== "undefined" && /^https?:/i.test(location.protocol);
+  if (publicado) {
+    caja.appendChild(crear("p", "aviso-admin",
+      "Estás en la versión publicada en internet. Los visitantes ven el archivo datos.js del repositorio, " +
+      "NO los cambios guardados en tu navegador. Para que todos los vean: pulsa «Descargar datos.js» y luego " +
+      "ejecuta el archivo «Publicar cambios.cmd» de la carpeta del proyecto."));
+  }
+
+  caja.appendChild(crear("p", "nota-admin",
+    "Los cambios se guardan solos en este navegador (localStorage). Para no perderlos, descarga el archivo " +
+    "datos.js actualizado y reemplaza el del proyecto; así quedan también en el código."));
+
+  const acciones = crear("div", "acciones-admin");
+  acciones.appendChild(boton("Guardar ahora", "principal", () => { guardarEstado(); avisarGuardado("Guardado manual"); }));
+  acciones.appendChild(boton("Descargar datos.js", "principal", () => {
+    descargarArchivo("datos.js", generarDatosJS(), "text/javascript;charset=utf-8");
+    avisarGuardado("datos.js descargado");
+  }));
+  acciones.appendChild(boton("Exportar copia (JSON)", "secundario", () => {
+    descargarArchivo("copa-datos.json", JSON.stringify(estadoActual(), null, 2), "application/json;charset=utf-8");
+    avisarGuardado("JSON exportado");
+  }));
+  caja.appendChild(acciones);
+
+  const importar = crear("div", "acciones-admin");
+  const etiqueta = crear("label", "campo-admin");
+  etiqueta.appendChild(crear("span", "campo-etiqueta", "Importar copia (JSON)"));
+  const archivo = document.createElement("input");
+  archivo.type = "file";
+  archivo.accept = ".json,application/json";
+  archivo.addEventListener("change", () => {
+    const f = archivo.files && archivo.files[0];
+    if (!f) return;
+    const lector = new FileReader();
+    lector.onload = () => {
+      try {
+        const datos = JSON.parse(String(lector.result));
+        aplicarEstado(datos);
+        construirSecciones();
+        rellenarDatalist();
+        trasCambio("Datos importados");
+      } catch (e) {
+        avisarGuardado("El archivo no es válido");
+      }
+    };
+    lector.readAsText(f);
+  });
+  etiqueta.appendChild(archivo);
+  importar.appendChild(etiqueta);
+  importar.appendChild(boton("Restablecer a los datos del archivo datos.js", "peligro", () => {
+    borrarEstadoGuardado();
+    location.reload();
+  }));
+  caja.appendChild(importar);
+}
+
+function construirSecciones() {
+  construirTorneo();
+  construirEquipos();
+  construirPartidos();
+  construirGoleadores();
+  construirTarjetas("amarillas", "seccion-amarillas", "amarilla", "Amarillas");
+  construirTarjetas("rojas", "seccion-rojas", "roja", "Rojas");
+  construirSeguridad();
+  construirDatos();
+}
+
+/* ============================== acceso y panel ============================== */
+function mostrarErrorClave(texto) {
+  document.getElementById("error-clave").textContent = texto;
+}
+
+function abrirAcceso() {
+  if (sesionActiva()) {
+    abrirPanel();
+    return;
+  }
+  const primeraVez = !hayClaveConfigurada();
+  modoCrear = primeraVez;
+  document.getElementById("campo-clave-2").hidden = !primeraVez;
+  document.getElementById("titulo-clave").textContent = primeraVez ? "Crea tu contraseña" : "Panel de administración";
+  document.getElementById("texto-clave").textContent = primeraVez
+    ? "Es la primera vez. Elige una contraseña: solo con ella se podrá configurar la página."
+    : "Escribe tu contraseña para configurar los datos de la copa.";
+  document.getElementById("btn-entrar").textContent = primeraVez ? "Crear y entrar" : "Entrar";
+  document.getElementById("clave-1").value = "";
+  document.getElementById("clave-2").value = "";
+  mostrarErrorClave("");
+  document.getElementById("modal-clave").hidden = false;
+  document.getElementById("clave-1").focus();
+}
+
+function cerrarModal() {
+  document.getElementById("modal-clave").hidden = true;
+}
+
+function intentarEntrar() {
+  const ahora = Date.now();
+  if (ahora < bloqueadoHasta) {
+    mostrarErrorClave("Demasiados intentos. Espera " + Math.ceil((bloqueadoHasta - ahora) / 1000) + " segundos.");
+    return;
+  }
+  const c1 = document.getElementById("clave-1").value;
+  const c2 = document.getElementById("clave-2").value;
+
+  if (modoCrear) {
+    if (c1.length < MINIMO_CLAVE) return mostrarErrorClave("Usa al menos " + MINIMO_CLAVE + " caracteres.");
+    if (c1 !== c2) return mostrarErrorClave("Las dos contraseñas no coinciden.");
+    guardarSeguridad(c1);
+    iniciarSesion();
+    cerrarModal();
+    abrirPanel();
+    avisarGuardado("Contraseña creada");
+    return;
+  }
+
+  if (claveCorrecta(c1)) {
+    intentosFallidos = 0;
+    iniciarSesion();
+    cerrarModal();
+    abrirPanel();
+  } else {
+    intentosFallidos++;
+    if (intentosFallidos >= MAX_INTENTOS) {
+      bloqueadoHasta = Date.now() + BLOQUEO_MS;
+      intentosFallidos = 0;
+      mostrarErrorClave("Demasiados intentos fallidos. Espera 30 segundos.");
+    } else {
+      mostrarErrorClave("Contraseña incorrecta. Intentos: " + intentosFallidos + " de " + MAX_INTENTOS + ".");
+    }
+  }
+}
+
+function abrirPanel() {
+  document.getElementById("panel-admin").hidden = false;
+  rellenarDatalist();
+  construirSecciones();
+  mostrarSeccion("torneo");
+}
+
+function cerrarPanel() {
+  document.getElementById("panel-admin").hidden = true;
+}
+
+function mostrarSeccion(nombre) {
+  document.querySelectorAll("#menu-admin .pestana-admin").forEach((b) => {
+    b.classList.toggle("activa", b.dataset.seccion === nombre);
+  });
+  document.querySelectorAll(".seccion-admin").forEach((s) => {
+    s.hidden = s.id !== "seccion-" + nombre;
+  });
+}
+
+function iniciarAdmin() {
+  const btn = document.getElementById("btn-admin");
+  if (btn) btn.addEventListener("click", abrirAcceso);
+
+  document.getElementById("btn-entrar").addEventListener("click", intentarEntrar);
+  document.getElementById("btn-cancelar-clave").addEventListener("click", cerrarModal);
+  document.getElementById("btn-cerrar-admin").addEventListener("click", cerrarPanel);
+  document.getElementById("btn-cerrar-sesion").addEventListener("click", () => {
+    cerrarSesion();
+    cerrarPanel();
+  });
+  document.getElementById("clave-1").addEventListener("keydown", (e) => { if (e.key === "Enter") intentarEntrar(); });
+  document.getElementById("clave-2").addEventListener("keydown", (e) => { if (e.key === "Enter") intentarEntrar(); });
+  document.getElementById("modal-clave").addEventListener("click", (e) => {
+    if (e.target.id === "modal-clave") cerrarModal();
+  });
+
+  document.querySelectorAll("#menu-admin .pestana-admin").forEach((b) => {
+    b.addEventListener("click", () => mostrarSeccion(b.dataset.seccion));
+  });
+
+  document.querySelectorAll("#panel-admin [data-cerrar]").forEach((b) => b.addEventListener("click", cerrarPanel));
+}
+
+if (typeof document !== "undefined") {
+  iniciarAdmin();
+}
