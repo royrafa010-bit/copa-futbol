@@ -8,7 +8,10 @@
 | Página completa | https://royrafa010-bit.github.io/copa-futbol/ |
 | Aún más corto (clck.ru) | https://clck.ru/3WKDqV |
 | Repositorio | https://github.com/royrafa010-bit/copa-futbol |
-| Código QR | https://royrafa010-bit.github.io/copa-futbol/codigo-qr.png |
+| Código QR (imagen) | https://raw.githubusercontent.com/royrafa010-bit/copa-futbol/main/codigo-qr.png |
+| Código QR (en la web) | https://royrafa010-bit.github.io/copa-futbol/codigo-qr.png |
+
+El archivo del QR también está en la carpeta del proyecto como **`codigo-qr.png`** (para imprimir o enviar).
 
 El enlace corto es un **sitio de usuario de GitHub Pages** (`royrafa010-bit.github.io`) con una página que
 redirige a la copa: es tuyo, no depende de ningún acortador externo y no caduca.
