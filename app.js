@@ -172,6 +172,7 @@ function marcador(partido) {
    ------------------------------------------------------------------------ */
 function pintarPosiciones() {
   const contenedor = document.getElementById("lista-posiciones");
+  if (!contenedor) return;
 
   listaGrupos().forEach((grupo) => {
     const equipos = EQUIPOS.filter((e) => e.grupo === grupo);
@@ -199,6 +200,7 @@ function pintarPosiciones() {
 /* ------------------------------ fase de grupos ------------------------------ */
 function pintarGrupos() {
   const contenedor = document.getElementById("lista-grupos");
+  if (!contenedor) return;
 
   listaGrupos().forEach((grupo) => {
     const equipos = EQUIPOS.filter((e) => e.grupo === grupo);
@@ -244,6 +246,7 @@ function filaPartido(partido) {
 /* ------------------------------ eliminatorias ------------------------------ */
 function pintarEliminatorias() {
   const contenedor = document.getElementById("lista-eliminatorias");
+  if (!contenedor) return;
   const rondas = [...new Set(PARTIDOS.filter((p) => !String(p.fase).startsWith("Grupo")).map((p) => p.fase))];
   rondas.sort((a, b) => (ORDEN_ELIMINATORIAS.indexOf(a) + 1 || 99) - (ORDEN_ELIMINATORIAS.indexOf(b) + 1 || 99));
 
@@ -265,6 +268,7 @@ function pintarEliminatorias() {
 /* ------------------------------ goleadores ------------------------------ */
 function pintarGoleadores() {
   const contenedor = document.getElementById("lista-goleadores");
+  if (!contenedor) return;
   const tarjeta = crear("section", "tarjeta");
   tarjeta.appendChild(crear("h2", null, "Tabla de goleadores"));
 
@@ -303,6 +307,7 @@ function clasePosicion(posicion) {
 
 function pintarPlantilla() {
   const contenedor = document.getElementById("lista-plantilla");
+  if (!contenedor) return;
 
   if (JUGADORES.length === 0) {
     const tarjeta = crear("section", "tarjeta");
@@ -348,6 +353,7 @@ function pintarPlantilla() {
 /* ------------------------ apartados de tarjetas ------------------------ */
 function pintarListaTarjetas(contenedorId, lista, tipo, titulo, columna, vacio) {
   const contenedor = document.getElementById(contenedorId);
+  if (!contenedor) return;
   const tarjeta = crear("section", "tarjeta");
   tarjeta.appendChild(crear("h2", null, titulo));
 
@@ -392,15 +398,21 @@ function pintarRojas() {
 
 /* ------------------------------ cabecera ------------------------------ */
 function pintarEncabezado() {
-  document.getElementById("titulo-torneo").textContent = TORNEO.nombre;
-  document.getElementById("subtitulo-torneo").textContent = `${TORNEO.temporada} · ${TORNEO.descripcion}`;
-  document.getElementById("actualizado").textContent = TORNEO.actualizado
-    ? `Actualizado: ${TORNEO.actualizado}`
-    : "Sin resultados registrados todavía";
+  const titulo = document.getElementById("titulo-torneo");
+  const subtitulo = document.getElementById("subtitulo-torneo");
+  const actualizado = document.getElementById("actualizado");
+  if (titulo) titulo.textContent = TORNEO.nombre;
+  if (subtitulo) subtitulo.textContent = `${TORNEO.temporada} · ${TORNEO.descripcion}`;
+  if (actualizado) {
+    actualizado.textContent = TORNEO.actualizado
+      ? `Actualizado: ${TORNEO.actualizado}`
+      : "Sin resultados registrados todavía";
+  }
   document.title = `${TORNEO.nombre} ${TORNEO.temporada} — Resultados`;
 
   const jugados = PARTIDOS.filter(estaJugado).length;
   const resumen = document.getElementById("resumen");
+  if (!resumen) return;
   [
     ["Equipos", EQUIPOS.length],
     ["Jugadores", JUGADORES.length],
@@ -434,17 +446,30 @@ function renderizarTodo() {
     const el = document.getElementById(id);
     if (el) el.innerHTML = "";
   });
-  pintarEncabezado();
-  pintarPosiciones();
-  pintarGrupos();
-  pintarEliminatorias();
-  pintarPlantilla();
-  pintarGoleadores();
-  pintarAmarillas();
-  pintarRojas();
+  const vistas = [
+    ["cabecera", pintarEncabezado],
+    ["posiciones", pintarPosiciones],
+    ["grupos", pintarGrupos],
+    ["eliminatorias", pintarEliminatorias],
+    ["plantilla", pintarPlantilla],
+    ["goleadores", pintarGoleadores],
+    ["amarillas", pintarAmarillas],
+    ["rojas", pintarRojas],
+  ];
+  vistas.forEach(([nombre, pintar]) => {
+    try {
+      pintar();
+    } catch (e) {
+      if (typeof console !== "undefined") console.error("Error dibujando " + nombre + ":", e);
+    }
+  });
 }
 
 /* ------------------------------ inicio ------------------------------ */
 cargarEstadoGuardado();
-renderizarTodo();
+try {
+  renderizarTodo();
+} catch (e) {
+  if (typeof console !== "undefined") console.error("Error al dibujar la página:", e);
+}
 activarPestanas();

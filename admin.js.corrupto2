@@ -1,19 +1,19 @@
 /* ============================================================================
-   admin.js — panel de configuración dentro de la propia página
+   admin.js â€” panel de configuraciÃ³n dentro de la propia pÃ¡gina
    ----------------------------------------------------------------------------
-   Solo se entra con la contraseña. Todo lo que cambies aquí se guarda en este
-   navegador (localStorage) y la página se redibuja al instante.
+   Solo se entra con la contraseÃ±a. Todo lo que cambies aquÃ­ se guarda en este
+   navegador (localStorage) y la pÃ¡gina se redibuja al instante.
 
    AVISO IMPORTANTE SOBRE LA SEGURIDAD
-   Esto es una página estática: la contraseña protege de que un visitante
+   Esto es una pÃ¡gina estÃ¡tica: la contraseÃ±a protege de que un visitante
    curioso toque tus datos, pero NO es seguridad real. Cualquiera que tenga el
-   archivo en su computadora puede leer el código. Si algún día la publicas en
-   internet y necesitas protección de verdad, hace falta un servidor.
+   archivo en su computadora puede leer el cÃ³digo. Si algÃºn dÃ­a la publicas en
+   internet y necesitas protecciÃ³n de verdad, hace falta un servidor.
    ============================================================================ */
 
 /* ============================== SHA-256 en JavaScript puro ==============================
-   Se implementa aquí para que funcione incluso abriendo el archivo con doble
-   clic (file://), donde el navegador no ofrece la API de criptografía.
+   Se implementa aquÃ­ para que funcione incluso abriendo el archivo con doble
+   clic (file://), donde el navegador no ofrece la API de criptografÃ­a.
    ======================================================================================== */
 function sha256(texto) {
   const bytes = new TextEncoder().encode(texto);
@@ -154,8 +154,6 @@ function cerrarSesion() {
 function avisarGuardado(mensaje) {
   const el = document.getElementById("estado-guardado");
   if (!el) return;
-  // si hay un aviso importante en rojo (por ejemplo, versiones mezcladas), no lo tapamos
-  if (el.classList.contains("error-estado")) return;
   const hora = new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
   el.classList.remove("error-estado");
   el.textContent = (mensaje || "Guardado") + " a las " + hora;
@@ -172,9 +170,8 @@ function avisarProblema(texto) {
   el.textContent = texto;
 }
 
-/* Detecta versiones mezcladas en la caché del navegador: si el index.html es
-   viejo y el JavaScript es nuevo (o al revés), faltarían elementos y el panel
-   parecería "no dejar escribir". */
+/* Detecta versiones mezcladas en la caché: si index.html es viejo y el
+   JavaScript nuevo (o al revés), faltarán elementos o funciones. */
 function revisarCompatibilidad() {
   const faltan = [];
   if (typeof pintarPlantilla !== "function") faltan.push("app.js antiguo");
@@ -277,8 +274,8 @@ function construirTorneo() {
 
   rejilla.appendChild(campoAdmin("Nombre del torneo", TORNEO.nombre, (v) => { TORNEO.nombre = v; trasCambio("Torneo"); }));
   rejilla.appendChild(campoAdmin("Temporada", TORNEO.temporada, (v) => { TORNEO.temporada = v; trasCambio("Torneo"); }));
-  rejilla.appendChild(campoAdmin("Descripción", TORNEO.descripcion, (v) => { TORNEO.descripcion = v; trasCambio("Torneo"); }));
-  rejilla.appendChild(campoAdmin("Última actualización", TORNEO.actualizado, (v) => { TORNEO.actualizado = v; trasCambio("Torneo"); }));
+  rejilla.appendChild(campoAdmin("DescripciÃ³n", TORNEO.descripcion, (v) => { TORNEO.descripcion = v; trasCambio("Torneo"); }));
+  rejilla.appendChild(campoAdmin("Ãšltima actualizaciÃ³n", TORNEO.actualizado, (v) => { TORNEO.actualizado = v; trasCambio("Torneo"); }));
   rejilla.appendChild(campoAdmin("Puntos por victoria", TORNEO.puntosVictoria, (v) => { TORNEO.puntosVictoria = Number(v) || 0; trasCambio("Puntos"); }, "number"));
   rejilla.appendChild(campoAdmin("Puntos por empate", TORNEO.puntosEmpate, (v) => { TORNEO.puntosEmpate = Number(v) || 0; trasCambio("Puntos"); }, "number"));
   rejilla.appendChild(campoAdmin("Clasifican por grupo", TORNEO.clasificanPorGrupo, (v) => { TORNEO.clasificanPorGrupo = Number(v) || 0; trasCambio("Clasificados"); }, "number"));
@@ -300,13 +297,13 @@ function construirEquipos() {
   caja.innerHTML = "";
 
   const acciones = crear("div", "acciones-admin");
-  acciones.appendChild(boton("+ Añadir equipo", "principal", () => {
+  acciones.appendChild(boton("+ AÃ±adir equipo", "principal", () => {
     let n = 1;
     while (EQUIPOS.some((e) => e.id === "equipo" + n)) n++;
     EQUIPOS.push({ id: "equipo" + n, nombre: "Equipo " + n, grupo: "A" });
     construirEquipos();
     rellenarDatalist();
-    trasCambio("Equipo añadido");
+    trasCambio("Equipo aÃ±adido");
   }));
   caja.appendChild(acciones);
 
@@ -330,7 +327,7 @@ function construirEquipos() {
       celdaInput(equipo.nombre, (v) => { equipo.nombre = v; trasCambio("Equipo"); }, "text", "200px"),
       celdaInput(equipo.grupo, (v) => { equipo.grupo = v; construirEquipos(); trasCambio("Grupo"); }, "text", "60px"),
       celdaBotones([
-        { texto: "✕", clase: "peligro", accion: () => { EQUIPOS.splice(indice, 1); construirEquipos(); rellenarDatalist(); trasCambio("Equipo eliminado"); } },
+        { texto: "âœ•", clase: "peligro", accion: () => { EQUIPOS.splice(indice, 1); construirEquipos(); rellenarDatalist(); trasCambio("Equipo eliminado"); } },
       ]),
     ]);
   });
@@ -345,12 +342,12 @@ function construirPartidos() {
   caja.innerHTML = "";
 
   const acciones = crear("div", "acciones-admin");
-  acciones.appendChild(boton("+ Añadir partido", "principal", () => {
+  acciones.appendChild(boton("+ AÃ±adir partido", "principal", () => {
     PARTIDOS.push({ fase: "Grupo A", jornada: "Jornada 1", fecha: "", local: "", visitante: "", golesLocal: null, golesVisitante: null });
     construirPartidos();
-    trasCambio("Partido añadido");
+    trasCambio("Partido aÃ±adido");
   }));
-  acciones.appendChild(crear("span", "nota-admin", "Deja los goles vacíos si el partido no se ha jugado."));
+  acciones.appendChild(crear("span", "nota-admin", "Deja los goles vacÃ­os si el partido no se ha jugado."));
   caja.appendChild(acciones);
 
   const fases = [...new Set(PARTIDOS.map((p) => p.fase))];
@@ -377,7 +374,7 @@ function construirPartidos() {
         celdaInput(p.golesLocal, cambiarGoles("local"), "number", "60px"),
         celdaInput(p.golesVisitante, cambiarGoles("visitante"), "number", "60px"),
         celdaBotones([
-          { texto: "✕", clase: "peligro", accion: () => { PARTIDOS.splice(indice, 1); construirPartidos(); trasCambio("Partido eliminado"); } },
+          { texto: "âœ•", clase: "peligro", accion: () => { PARTIDOS.splice(indice, 1); construirPartidos(); trasCambio("Partido eliminado"); } },
         ]),
       ]);
     });
@@ -392,7 +389,7 @@ function construirPlantilla() {
   caja.innerHTML = "";
 
   const acciones = crear("div", "acciones-admin");
-  acciones.appendChild(boton("+ Añadir jugador", "principal", () => {
+  acciones.appendChild(boton("+ AÃ±adir jugador", "principal", () => {
     JUGADORES.push({
       nombre: "",
       dorsal: JUGADORES.length + 1,
@@ -400,7 +397,7 @@ function construirPlantilla() {
       equipo: EQUIPOS[0] ? EQUIPOS[0].id : "",
     });
     construirPlantilla();
-    trasCambio("Jugador añadido");
+    trasCambio("Jugador aÃ±adido");
   }));
   acciones.appendChild(boton("Ordenar por equipo y dorsal", "secundario", () => {
     JUGADORES.sort(
@@ -418,10 +415,10 @@ function construirPlantilla() {
       celdaInput(j.equipo, (v) => { j.equipo = v.trim(); trasCambio("Equipo"); }, "text", "110px", "lista-equipos"),
       celdaInput(j.dorsal, (v) => { j.dorsal = v === "" ? "" : Number(v); trasCambio("Dorsal"); }, "number", "70px"),
       celdaInput(j.nombre, (v) => { j.nombre = v; trasCambio("Jugador"); }, "text", "240px"),
-      celdaInput(j.posicion, (v) => { j.posicion = v; trasCambio("Posición"); }, "text", "160px", "lista-posiciones"),
+      celdaInput(j.posicion, (v) => { j.posicion = v; trasCambio("PosiciÃ³n"); }, "text", "160px", "lista-posiciones"),
       celdaBotones([
         {
-          texto: "✕",
+          texto: "âœ•",
           clase: "peligro",
           accion: () => {
             JUGADORES.splice(indice, 1);
@@ -433,9 +430,9 @@ function construirPlantilla() {
     ]);
   });
 
-  caja.appendChild(tablaAdmin(["Equipo", "Dorsal", "Nombre y apellidos", "Posición", ""], filas));
+  caja.appendChild(tablaAdmin(["Equipo", "Dorsal", "Nombre y apellidos", "PosiciÃ³n", ""], filas));
   caja.appendChild(crear("p", "nota-admin",
-    "En la página la plantilla aparece agrupada por equipo y ordenada por dorsal, con un color por posición. " +
+    "En la pÃ¡gina la plantilla aparece agrupada por equipo y ordenada por dorsal, con un color por posiciÃ³n. " +
     "Posiciones sugeridas: Portero, Defensa, Mediocampista, Delantero (puedes escribir otra)."));
 }
 
@@ -445,10 +442,10 @@ function construirGoleadores() {
   caja.innerHTML = "";
 
   const acciones = crear("div", "acciones-admin");
-  acciones.appendChild(boton("+ Añadir goleador", "principal", () => {
+  acciones.appendChild(boton("+ AÃ±adir goleador", "principal", () => {
     GOLEADORES.push({ jugador: "", equipo: EQUIPOS[0] ? EQUIPOS[0].id : "", goles: 0 });
     construirGoleadores();
-    trasCambio("Goleador añadido");
+    trasCambio("Goleador aÃ±adido");
   }));
   caja.appendChild(acciones);
 
@@ -459,7 +456,7 @@ function construirGoleadores() {
       celdaInput(g.equipo, (v) => { g.equipo = v.trim(); trasCambio("Equipo"); }, "text", "120px", "lista-equipos"),
       celdaInput(g.goles, (v) => { g.goles = Number(v) || 0; trasCambio("Goles"); }, "number", "70px"),
       celdaBotones([
-        { texto: "✕", clase: "peligro", accion: () => { GOLEADORES.splice(indice, 1); construirGoleadores(); trasCambio("Goleador eliminado"); } },
+        { texto: "âœ•", clase: "peligro", accion: () => { GOLEADORES.splice(indice, 1); construirGoleadores(); trasCambio("Goleador eliminado"); } },
       ]),
     ]);
   });
@@ -475,10 +472,10 @@ function construirTarjetas(clave, contenedorId, tipo, titulo) {
   caja.innerHTML = "";
 
   const acciones = crear("div", "acciones-admin");
-  acciones.appendChild(boton("+ Añadir tarjeta", "principal", () => {
+  acciones.appendChild(boton("+ AÃ±adir tarjeta", "principal", () => {
     lista.push({ jugador: "", equipo: EQUIPOS[0] ? EQUIPOS[0].id : "", cantidad: 1 });
     construirTarjetas(clave, contenedorId, tipo, titulo);
-    trasCambio("Tarjeta añadida");
+    trasCambio("Tarjeta aÃ±adida");
   }));
   caja.appendChild(acciones);
 
@@ -498,15 +495,15 @@ function construirTarjetas(clave, contenedorId, tipo, titulo) {
       celdaInput(t.equipo, (v) => { t.equipo = v.trim(); trasCambio("Equipo"); }, "text", "120px", "lista-equipos"),
       celdaInput(t.cantidad, (v) => { t.cantidad = Number(v) || 0; trasCambio("Cantidad"); }, "number", "70px"),
       celdaBotones([
-        { texto: "↑", clase: "secundario", accion: () => mover(indice, -1) },
-        { texto: "↓", clase: "secundario", accion: () => mover(indice, 1) },
-        { texto: "✕", clase: "peligro", accion: () => { lista.splice(indice, 1); construirTarjetas(clave, contenedorId, tipo, titulo); trasCambio("Tarjeta eliminada"); } },
+        { texto: "â†‘", clase: "secundario", accion: () => mover(indice, -1) },
+        { texto: "â†“", clase: "secundario", accion: () => mover(indice, 1) },
+        { texto: "âœ•", clase: "peligro", accion: () => { lista.splice(indice, 1); construirTarjetas(clave, contenedorId, tipo, titulo); trasCambio("Tarjeta eliminada"); } },
       ]),
     ]);
   });
 
   caja.appendChild(tablaAdmin(["Jugador", "Equipo", "Cantidad", "Orden"], filas));
-  caja.appendChild(crear("p", "nota-admin", "Se muestran en este mismo orden: usa ↑ y ↓ para cambiarlo."));
+  caja.appendChild(crear("p", "nota-admin", "Se muestran en este mismo orden: usa â†‘ y â†“ para cambiarlo."));
 }
 
 function construirSeguridad() {
@@ -515,12 +512,12 @@ function construirSeguridad() {
   caja.innerHTML = "";
 
   if (!hayClaveConfigurada()) {
-    caja.appendChild(crear("p", "nota-admin", "Todavía no hay contraseña. Cierra el panel y vuelve a abrirlo para crearla."));
+    caja.appendChild(crear("p", "nota-admin", "TodavÃ­a no hay contraseÃ±a. Cierra el panel y vuelve a abrirlo para crearla."));
   }
 
   const rejilla = crear("div", "rejilla-campos");
-  const cActual = campoAdmin("Contraseña actual", "", () => {}, "password");
-  const cNueva = campoAdmin("Contraseña nueva", "", () => {}, "password");
+  const cActual = campoAdmin("ContraseÃ±a actual", "", () => {}, "password");
+  const cNueva = campoAdmin("ContraseÃ±a nueva", "", () => {}, "password");
   const cRepetir = campoAdmin("Repetir la nueva", "", () => {}, "password");
   rejilla.appendChild(cActual);
   rejilla.appendChild(cNueva);
@@ -529,24 +526,24 @@ function construirSeguridad() {
 
   const mensaje = crear("p", "nota-admin", "");
   const acciones = crear("div", "acciones-admin");
-  acciones.appendChild(boton("Cambiar contraseña", "principal", () => {
+  acciones.appendChild(boton("Cambiar contraseÃ±a", "principal", () => {
     const actual = cActual.querySelector("input").value;
     const nueva = cNueva.querySelector("input").value;
     const repetir = cRepetir.querySelector("input").value;
-    if (hayClaveConfigurada() && !claveCorrecta(actual)) { mensaje.textContent = "La contraseña actual no es correcta."; return; }
-    if (nueva.length < MINIMO_CLAVE) { mensaje.textContent = "La contraseña nueva debe tener al menos " + MINIMO_CLAVE + " caracteres."; return; }
-    if (nueva !== repetir) { mensaje.textContent = "Las dos contraseñas nuevas no coinciden."; return; }
+    if (hayClaveConfigurada() && !claveCorrecta(actual)) { mensaje.textContent = "La contraseÃ±a actual no es correcta."; return; }
+    if (nueva.length < MINIMO_CLAVE) { mensaje.textContent = "La contraseÃ±a nueva debe tener al menos " + MINIMO_CLAVE + " caracteres."; return; }
+    if (nueva !== repetir) { mensaje.textContent = "Las dos contraseÃ±as nuevas no coinciden."; return; }
     guardarSeguridad(nueva);
-    mensaje.textContent = "Contraseña cambiada correctamente.";
+    mensaje.textContent = "ContraseÃ±a cambiada correctamente.";
     construirSeguridad();
   }));
-  acciones.appendChild(boton("Quitar contraseña", "peligro", () => {
+  acciones.appendChild(boton("Quitar contraseÃ±a", "peligro", () => {
     borrarSeguridad();
-    mensaje.textContent = "Contraseña eliminada. La próxima vez podrás crear una nueva.";
+    mensaje.textContent = "ContraseÃ±a eliminada. La prÃ³xima vez podrÃ¡s crear una nueva.";
   }));
   caja.appendChild(acciones);
   caja.appendChild(mensaje);
-  caja.appendChild(crear("p", "nota-admin", "La contraseña se guarda cifrada (SHA-256) en este navegador. Si la olvidas, borra los datos del sitio en el navegador o limpia el almacenamiento desde la consola: localStorage.removeItem('" + CLAVE_SEGURIDAD + "')."));
+  caja.appendChild(crear("p", "nota-admin", "La contraseÃ±a se guarda cifrada (SHA-256) en este navegador. Si la olvidas, borra los datos del sitio en el navegador o limpia el almacenamiento desde la consola: localStorage.removeItem('" + CLAVE_SEGURIDAD + "')."));
 }
 
 function descargarArchivo(nombre, contenido, tipoMime) {
@@ -564,7 +561,7 @@ function descargarArchivo(nombre, contenido, tipoMime) {
 function generarDatosJS() {
   const fecha = new Date().toLocaleString("es-ES");
   return [
-    "/* Datos de la copa — generado desde el panel de la página el " + fecha + ".",
+    "/* Datos de la copa â€” generado desde el panel de la pÃ¡gina el " + fecha + ".",
     "   Reemplaza con este archivo el datos.js del proyecto para conservar los datos",
     "   aunque borres el almacenamiento del navegador. */",
     "",
@@ -595,14 +592,14 @@ function construirDatos() {
   const publicado = typeof location !== "undefined" && /^https?:/i.test(location.protocol);
   if (publicado) {
     caja.appendChild(crear("p", "aviso-admin",
-      "Estás en la versión publicada en internet. Los visitantes ven el archivo datos.js del repositorio, " +
-      "NO los cambios guardados en tu navegador. Para que todos los vean: pulsa «Descargar datos.js» y luego " +
-      "ejecuta el archivo «Publicar cambios.cmd» de la carpeta del proyecto."));
+      "EstÃ¡s en la versiÃ³n publicada en internet. Los visitantes ven el archivo datos.js del repositorio, " +
+      "NO los cambios guardados en tu navegador. Para que todos los vean: pulsa Â«Descargar datos.jsÂ» y luego " +
+      "ejecuta el archivo Â«Publicar cambios.cmdÂ» de la carpeta del proyecto."));
   }
 
   caja.appendChild(crear("p", "nota-admin",
     "Los cambios se guardan solos en este navegador (localStorage). Para no perderlos, descarga el archivo " +
-    "datos.js actualizado y reemplaza el del proyecto; así quedan también en el código."));
+    "datos.js actualizado y reemplaza el del proyecto; asÃ­ quedan tambiÃ©n en el cÃ³digo."));
 
   const acciones = crear("div", "acciones-admin");
   acciones.appendChild(boton("Guardar ahora", "principal", () => { guardarEstado(); avisarGuardado("Guardado manual"); }));
@@ -634,7 +631,7 @@ function construirDatos() {
         rellenarDatalist();
         trasCambio("Datos importados");
       } catch (e) {
-        avisarGuardado("El archivo no es válido");
+        avisarGuardado("El archivo no es vÃ¡lido");
       }
     };
     lector.readAsText(f);
@@ -687,10 +684,10 @@ function abrirAcceso() {
   const primeraVez = !hayClaveConfigurada();
   modoCrear = primeraVez;
   document.getElementById("campo-clave-2").hidden = !primeraVez;
-  document.getElementById("titulo-clave").textContent = primeraVez ? "Crea tu contraseña" : "Panel de administración";
+  document.getElementById("titulo-clave").textContent = primeraVez ? "Crea tu contraseÃ±a" : "Panel de administraciÃ³n";
   document.getElementById("texto-clave").textContent = primeraVez
-    ? "Es la primera vez. Elige una contraseña: solo con ella se podrá configurar la página."
-    : "Escribe tu contraseña para configurar los datos de la copa.";
+    ? "Es la primera vez. Elige una contraseÃ±a: solo con ella se podrÃ¡ configurar la pÃ¡gina."
+    : "Escribe tu contraseÃ±a para configurar los datos de la copa.";
   document.getElementById("btn-entrar").textContent = primeraVez ? "Crear y entrar" : "Entrar";
   document.getElementById("clave-1").value = "";
   document.getElementById("clave-2").value = "";
@@ -714,12 +711,12 @@ function intentarEntrar() {
 
   if (modoCrear) {
     if (c1.length < MINIMO_CLAVE) return mostrarErrorClave("Usa al menos " + MINIMO_CLAVE + " caracteres.");
-    if (c1 !== c2) return mostrarErrorClave("Las dos contraseñas no coinciden.");
+    if (c1 !== c2) return mostrarErrorClave("Las dos contraseÃ±as no coinciden.");
     guardarSeguridad(c1);
     iniciarSesion();
     cerrarModal();
     abrirPanel();
-    avisarGuardado("Contraseña creada");
+    avisarGuardado("ContraseÃ±a creada");
     return;
   }
 
@@ -735,22 +732,16 @@ function intentarEntrar() {
       intentosFallidos = 0;
       mostrarErrorClave("Demasiados intentos fallidos. Espera 30 segundos.");
     } else {
-      mostrarErrorClave("Contraseña incorrecta. Intentos: " + intentosFallidos + " de " + MAX_INTENTOS + ".");
+      mostrarErrorClave("ContraseÃ±a incorrecta. Intentos: " + intentosFallidos + " de " + MAX_INTENTOS + ".");
     }
   }
 }
 
 function abrirPanel() {
-  const panel = document.getElementById("panel-admin");
-  if (!panel) return;
-  panel.hidden = false;
+  document.getElementById("panel-admin").hidden = false;
   rellenarDatalist();
-  const compatible = revisarCompatibilidad();
   construirSecciones();
   mostrarSeccion("torneo");
-  if (!compatible) {
-    avisarProblema("Versiones mezcladas en la caché: pulsa Ctrl + F5 para recargar la página completa.");
-  }
 }
 
 function cerrarPanel() {

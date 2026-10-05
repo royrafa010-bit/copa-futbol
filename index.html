@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Copa Nacional de Fútbol — Resultados</title>
-  <link rel="stylesheet" href="estilos.css">
+  <link rel="stylesheet" href="estilos.css?v=6">
 </head>
 <body>
 
@@ -64,9 +64,12 @@
     <aside class="ayuda">
       <strong>¿Cómo se configura?</strong>
       Pulsa <strong>⚙️ Administrar</strong> y entra con tu contraseña. Desde ahí puedes cambiar el nombre del
-      torneo, los equipos, los partidos y marcadores, los goleadores y las tarjetas amarillas y rojas.
-      Los cambios se guardan en el navegador y <strong>la tabla de posiciones de los dos grupos se
-      recalcula sola</strong>. Solo tú puedes entrar.
+      torneo, los equipos, los partidos y marcadores, la plantilla de jugadores, los goleadores y las tarjetas
+      amarillas y rojas. Los cambios se guardan en el navegador y <strong>la tabla de posiciones de los dos
+      grupos se recalcula sola</strong>. Solo tú puedes entrar.
+      <br><br>
+      <strong>Si el panel sale vacío o no te deja escribir</strong>, es que el navegador guardó una versión
+      vieja: pulsa <kbd>Ctrl</kbd> + <kbd>F5</kbd> para recargar todo.
     </aside>
   </main>
 
@@ -141,9 +144,10 @@
     <option value="Delantero"></option>
   </datalist>
 
-  <!-- El orden importa: datos → dibujo de la página → panel de administración -->
-  <script src="datos.js"></script>
-  <script src="app.js"></script>
-  <script src="admin.js"></script>
+  <!-- El orden importa: datos → dibujo de la página → panel de administración.
+       El ?v=6 obliga al navegador a usar siempre la versión nueva de cada archivo. -->
+  <script src="datos.js?v=6"></script>
+  <script src="app.js?v=6"></script>
+  <script src="admin.js?v=6"></script>
 </body>
 </html>

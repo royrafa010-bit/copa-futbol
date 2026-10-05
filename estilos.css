@@ -376,6 +376,7 @@ th.roja { color: #a52222; }
   border-radius: 999px;
 }
 .estado-guardado.flash { background: var(--amarillo); color: #4a3400; }
+.estado-guardado.error-estado { background: #ffd9d9; color: #7a1010; font-weight: 600; }
 
 .menu-admin {
   display: flex;
