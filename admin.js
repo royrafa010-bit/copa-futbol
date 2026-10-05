@@ -353,6 +353,58 @@ function construirPartidos() {
   });
 }
 
+function construirPlantilla() {
+  const caja = document.getElementById("seccion-plantilla");
+  caja.innerHTML = "";
+
+  const acciones = crear("div", "acciones-admin");
+  acciones.appendChild(boton("+ Añadir jugador", "principal", () => {
+    JUGADORES.push({
+      nombre: "",
+      dorsal: JUGADORES.length + 1,
+      posicion: "Portero",
+      equipo: EQUIPOS[0] ? EQUIPOS[0].id : "",
+    });
+    construirPlantilla();
+    trasCambio("Jugador añadido");
+  }));
+  acciones.appendChild(boton("Ordenar por equipo y dorsal", "secundario", () => {
+    JUGADORES.sort(
+      (a, b) => String(a.equipo).localeCompare(String(b.equipo)) || (Number(a.dorsal) || 0) - (Number(b.dorsal) || 0)
+    );
+    construirPlantilla();
+    trasCambio("Plantilla ordenada");
+  }));
+  acciones.appendChild(crear("span", "nota-admin", "Total de jugadores: " + JUGADORES.length));
+  caja.appendChild(acciones);
+
+  const filas = JUGADORES.map((j) => {
+    const indice = JUGADORES.indexOf(j);
+    return filaConCeldas([
+      celdaInput(j.equipo, (v) => { j.equipo = v.trim(); trasCambio("Equipo"); }, "text", "110px", "lista-equipos"),
+      celdaInput(j.dorsal, (v) => { j.dorsal = v === "" ? "" : Number(v); trasCambio("Dorsal"); }, "number", "70px"),
+      celdaInput(j.nombre, (v) => { j.nombre = v; trasCambio("Jugador"); }, "text", "240px"),
+      celdaInput(j.posicion, (v) => { j.posicion = v; trasCambio("Posición"); }, "text", "160px", "lista-posiciones"),
+      celdaBotones([
+        {
+          texto: "✕",
+          clase: "peligro",
+          accion: () => {
+            JUGADORES.splice(indice, 1);
+            construirPlantilla();
+            trasCambio("Jugador eliminado");
+          },
+        },
+      ]),
+    ]);
+  });
+
+  caja.appendChild(tablaAdmin(["Equipo", "Dorsal", "Nombre y apellidos", "Posición", ""], filas));
+  caja.appendChild(crear("p", "nota-admin",
+    "En la página la plantilla aparece agrupada por equipo y ordenada por dorsal, con un color por posición. " +
+    "Posiciones sugeridas: Portero, Defensa, Mediocampista, Delantero (puedes escribir otra)."));
+}
+
 function construirGoleadores() {
   const caja = document.getElementById("seccion-goleadores");
   caja.innerHTML = "";
@@ -489,6 +541,8 @@ function generarDatosJS() {
     "",
     "const GOLEADORES = " + JSON.stringify(GOLEADORES, null, 2) + ";",
     "",
+    "const JUGADORES = " + JSON.stringify(JUGADORES, null, 2) + ";",
+    "",
     "const AMARILLAS = " + JSON.stringify(AMARILLAS, null, 2) + ";",
     "",
     "const ROJAS = " + JSON.stringify(ROJAS, null, 2) + ";",
@@ -560,6 +614,7 @@ function construirSecciones() {
   construirTorneo();
   construirEquipos();
   construirPartidos();
+  construirPlantilla();
   construirGoleadores();
   construirTarjetas("amarillas", "seccion-amarillas", "amarilla", "Amarillas");
   construirTarjetas("rojas", "seccion-rojas", "roja", "Rojas");

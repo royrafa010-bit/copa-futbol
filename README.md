@@ -1,8 +1,9 @@
 # Copa Nacional de Fútbol — Página de resultados
 
 Página web para seguir una copa de fútbol: **fase de grupos con tabla de posiciones automática**,
-**eliminatorias (cuartos, semifinales, tercer lugar y final)**, **tabla de goleadores** y dos apartados
-de disciplina: **🟨 tarjetas amarillas** y **🟥 tarjetas rojas**.
+**eliminatorias (cuartos, semifinales, tercer lugar y final)**, **plantilla de jugadores (nombre, dorsal
+y posición)**, **tabla de goleadores** y dos apartados de disciplina: **🟨 tarjetas amarillas** y
+**🟥 tarjetas rojas**.
 
 Todo se configura **desde la propia página**, con el botón **⚙️ Administrar**, protegido con una
 contraseña que solo tú conoces.
@@ -60,6 +61,7 @@ const CONFIG_ADMIN = {
 | **Torneo** | Nombre, temporada, descripción, fecha de actualización, puntos por victoria/empate y cuántos clasifican por grupo. Botón para poner la fecha de hoy |
 | **Equipos** | Añadir, borrar o cambiar el id, el nombre y el grupo. Si cambias un id, los partidos se actualizan solos |
 | **Partidos** | Fase, jornada, fecha, equipos y marcadores (deja los goles vacíos si no se ha jugado). Añadir o borrar partidos |
+| **Plantilla** | Jugadores de cada equipo: **nombre, dorsal y posición**. Botón para ordenar por equipo y dorsal |
 | **Goleadores** | Jugador, equipo y goles |
 | **🟨 Amarillas** | Jugador, equipo y cantidad. Orden manual con ↑ ↓ |
 | **🟥 Rojas** | Igual que las amarillas, en su propio apartado |
@@ -77,6 +79,29 @@ Se guardan en el **navegador** (almacenamiento local). Eso significa que:
 - Para que los datos queden también en el código, usa **Datos → Descargar datos.js** y reemplaza el
   archivo del proyecto. Así los conservas siempre.
 - **Datos → Restablecer** borra lo guardado en el navegador y vuelve a lo que dice `datos.js`.
+
+## Los datos en `datos.js` (si prefieres editar el archivo a mano)
+
+El panel es lo cómodo, pero también puedes editar `datos.js` directamente en VS Code:
+
+```js
+// Partidos: null = no jugado
+{ fase: "Grupo A", jornada: "Jornada 1", fecha: "12 de enero",
+  local: "pri", visitante: "ssp", golesLocal: 2, golesVisitante: 1 },
+
+// Plantilla de jugadores: nombre, dorsal y posición
+{ nombre: "Yordanis Sánchez", dorsal: 10, posicion: "Delantero", equipo: "hab" },
+
+// Goleadores
+{ jugador: "Yordanis Sánchez", equipo: "hab", goles: 3 },
+
+// Tarjetas (amarillas y rojas van en listas separadas)
+const AMARILLAS = [ { jugador: "Reinier Álvarez", equipo: "pri", cantidad: 2 } ];
+const ROJAS     = [ { jugador: "Yoel Fernández",  equipo: "hol", cantidad: 1 } ];
+```
+
+Después de editar el archivo, guarda y recarga la página. Si antes habías usado el panel, pulsa
+**Datos → Restablecer a los datos del archivo** para que la página tome lo que dice el archivo.
 
 ## Sobre la seguridad de la contraseña
 

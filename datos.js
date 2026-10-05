@@ -130,6 +130,17 @@ const PARTIDOS = [
 const GOLEADORES = [];
 
 /* ---------------------------------------------------------------------------
+   JUGADORES (plantilla): { nombre, dorsal, posicion, equipo }
+   - dorsal: número de la camiseta.
+   - posicion: Portero, Defensa, Mediocampista o Delantero (puedes escribir
+     otra, se muestra igual).
+   En la página aparecen agrupados por equipo y ordenados por dorsal.
+   Ejemplo:
+   { nombre: "Yordanis Sánchez", dorsal: 10, posicion: "Delantero", equipo: "hab" },
+   --------------------------------------------------------------------------- */
+const JUGADORES = [];
+
+/* ---------------------------------------------------------------------------
    AMARILLAS: { jugador, equipo, cantidad }  (se muestran en este orden)
    --------------------------------------------------------------------------- */
 const AMARILLAS = [];

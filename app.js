@@ -41,6 +41,7 @@ function estadoActual() {
     equipos: EQUIPOS,
     partidos: PARTIDOS,
     goleadores: GOLEADORES,
+    jugadores: JUGADORES,
     amarillas: AMARILLAS,
     rojas: ROJAS,
   };
@@ -57,6 +58,7 @@ function aplicarEstado(nuevo) {
   reemplazarContenido(EQUIPOS, nuevo.equipos);
   reemplazarContenido(PARTIDOS, nuevo.partidos);
   reemplazarContenido(GOLEADORES, nuevo.goleadores);
+  reemplazarContenido(JUGADORES, nuevo.jugadores);
   reemplazarContenido(AMARILLAS, nuevo.amarillas);
   reemplazarContenido(ROJAS, nuevo.rojas);
   return true;
@@ -289,6 +291,60 @@ function pintarGoleadores() {
   contenedor.appendChild(tarjeta);
 }
 
+/* ------------------------------ plantilla de jugadores ------------------------------ */
+function clasePosicion(posicion) {
+  const p = String(posicion || "").toLowerCase();
+  if (p.startsWith("port") || p.startsWith("arqu")) return "pos-portero";
+  if (p.startsWith("def")) return "pos-defensa";
+  if (p.startsWith("med") || p.startsWith("vol") || p.startsWith("cent")) return "pos-medio";
+  if (p.startsWith("del") || p.startsWith("ext") || p.startsWith("ata")) return "pos-delantero";
+  return "pos-otra";
+}
+
+function pintarPlantilla() {
+  const contenedor = document.getElementById("lista-plantilla");
+
+  if (JUGADORES.length === 0) {
+    const tarjeta = crear("section", "tarjeta");
+    tarjeta.appendChild(crear("h2", null, "Plantilla de jugadores"));
+    tarjeta.appendChild(
+      mensajeVacio("Todavía no hay jugadores. Añádelos desde ⚙️ Administrar → Plantilla (nombre, dorsal y posición).")
+    );
+    contenedor.appendChild(tarjeta);
+    return;
+  }
+
+  EQUIPOS.forEach((equipo) => {
+    const suyos = JUGADORES.filter((j) => j.equipo === equipo.id).sort(
+      (a, b) => (Number(a.dorsal) || 0) - (Number(b.dorsal) || 0) || String(a.nombre).localeCompare(String(b.nombre))
+    );
+    if (suyos.length === 0) return;
+
+    const tarjeta = crear("section", "tarjeta");
+    const titulo = crear("h2", null, equipo.nombre);
+    titulo.appendChild(crear("span", "contador", suyos.length + (suyos.length === 1 ? " jugador" : " jugadores")));
+    tarjeta.appendChild(titulo);
+
+    const tabla = crear("table", "posiciones");
+    tabla.innerHTML =
+      "<thead><tr><th>Dorsal</th><th class='equipo'>Jugador</th><th>Posición</th></tr></thead><tbody></tbody>";
+    const cuerpo = tabla.querySelector("tbody");
+
+    suyos.forEach((j) => {
+      const dorsal = j.dorsal === "" || j.dorsal === null || j.dorsal === undefined ? "—" : j.dorsal;
+      const tr = crear("tr");
+      tr.innerHTML =
+        `<td class="num dorsal">${dorsal}</td>` +
+        `<td class="equipo">${j.nombre || "(sin nombre)"}</td>` +
+        `<td><span class="posicion ${clasePosicion(j.posicion)}">${j.posicion || "—"}</span></td>`;
+      cuerpo.appendChild(tr);
+    });
+
+    tarjeta.appendChild(tabla);
+    contenedor.appendChild(tarjeta);
+  });
+}
+
 /* ------------------------ apartados de tarjetas ------------------------ */
 function pintarListaTarjetas(contenedorId, lista, tipo, titulo, columna, vacio) {
   const contenedor = document.getElementById(contenedorId);
@@ -347,6 +403,7 @@ function pintarEncabezado() {
   const resumen = document.getElementById("resumen");
   [
     ["Equipos", EQUIPOS.length],
+    ["Jugadores", JUGADORES.length],
     ["Partidos", PARTIDOS.length],
     ["Jugados", jugados],
     ["Por jugar", PARTIDOS.length - jugados],
@@ -373,7 +430,7 @@ function activarPestanas() {
 
 /* ------------------------------ dibujar todo ------------------------------ */
 function renderizarTodo() {
-  ["resumen", "lista-posiciones", "lista-grupos", "lista-eliminatorias", "lista-goleadores", "lista-amarillas", "lista-rojas"].forEach((id) => {
+  ["resumen", "lista-posiciones", "lista-grupos", "lista-eliminatorias", "lista-plantilla", "lista-goleadores", "lista-amarillas", "lista-rojas"].forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.innerHTML = "";
   });
@@ -381,6 +438,7 @@ function renderizarTodo() {
   pintarPosiciones();
   pintarGrupos();
   pintarEliminatorias();
+  pintarPlantilla();
   pintarGoleadores();
   pintarAmarillas();
   pintarRojas();

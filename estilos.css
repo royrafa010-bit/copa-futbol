@@ -441,6 +441,24 @@ th.roja { color: #a52222; }
 .celda-botones { white-space: nowrap; text-align: right; }
 .celda-botones .btn-admin { padding: .2rem .45rem; font-size: .8rem; margin-left: .15rem; }
 
+/* ------------------------------- plantilla ------------------------------- */
+td.dorsal { font-weight: 700; color: var(--azul); }
+
+.posicion {
+  display: inline-block;
+  font-size: .7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  border-radius: 999px;
+  padding: .12rem .5rem;
+}
+.pos-portero   { background: #fff2cc; color: #7a5c00; }
+.pos-defensa   { background: #dce9f7; color: #1b4b7a; }
+.pos-medio     { background: #e2f2e4; color: #17603a; }
+.pos-delantero { background: #fadcdc; color: #96201f; }
+.pos-otra      { background: #eceff3; color: var(--gris); }
+
 /* ------------------------------- impresión ------------------------------- */
 @media print {
   .pestanas, .ayuda, .overlay { display: none !important; }

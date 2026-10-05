@@ -22,6 +22,7 @@
     <button class="pestana activa" data-panel="posiciones">Tabla de posiciones</button>
     <button class="pestana" data-panel="grupos">Fase de grupos</button>
     <button class="pestana" data-panel="eliminatorias">Eliminatorias</button>
+    <button class="pestana" data-panel="plantilla">Plantilla</button>
     <button class="pestana" data-panel="goleadores">Goleadores</button>
     <button class="pestana" data-panel="amarillas">🟨 Amarillas</button>
     <button class="pestana" data-panel="rojas">🟥 Rojas</button>
@@ -42,6 +43,10 @@
 
     <section id="panel-eliminatorias" class="panel" hidden>
       <div id="lista-eliminatorias" class="rejilla"></div>
+    </section>
+
+    <section id="panel-plantilla" class="panel" hidden>
+      <div id="lista-plantilla" class="rejilla"></div>
     </section>
 
     <section id="panel-goleadores" class="panel" hidden>
@@ -105,6 +110,7 @@
         <button class="pestana-admin activa" data-seccion="torneo" type="button">Torneo</button>
         <button class="pestana-admin" data-seccion="equipos" type="button">Equipos</button>
         <button class="pestana-admin" data-seccion="partidos" type="button">Partidos</button>
+        <button class="pestana-admin" data-seccion="plantilla" type="button">Plantilla</button>
         <button class="pestana-admin" data-seccion="goleadores" type="button">Goleadores</button>
         <button class="pestana-admin" data-seccion="amarillas" type="button">🟨 Amarillas</button>
         <button class="pestana-admin" data-seccion="rojas" type="button">🟥 Rojas</button>
@@ -116,6 +122,7 @@
         <div id="seccion-torneo" class="seccion-admin"></div>
         <div id="seccion-equipos" class="seccion-admin" hidden></div>
         <div id="seccion-partidos" class="seccion-admin" hidden></div>
+        <div id="seccion-plantilla" class="seccion-admin" hidden></div>
         <div id="seccion-goleadores" class="seccion-admin" hidden></div>
         <div id="seccion-amarillas" class="seccion-admin" hidden></div>
         <div id="seccion-rojas" class="seccion-admin" hidden></div>
@@ -127,6 +134,12 @@
 
   <!-- sugerencias de equipos para los formularios del panel -->
   <datalist id="lista-equipos"></datalist>
+  <datalist id="lista-posiciones">
+    <option value="Portero"></option>
+    <option value="Defensa"></option>
+    <option value="Mediocampista"></option>
+    <option value="Delantero"></option>
+  </datalist>
 
   <!-- El orden importa: datos → dibujo de la página → panel de administración -->
   <script src="datos.js"></script>
