@@ -43,7 +43,16 @@ $mensaje = "Actualiza los resultados - " + (Get-Date -Format 'yyyy-MM-dd HH:mm')
 & $git -C $proyecto commit -m $mensaje
 
 Write-Host "== 3. Subiendo a GitHub =="
-& $git -C $proyecto push
+$ErrorActionPreference = 'Continue'
+$seguimiento = & $git -C $proyecto rev-parse --abbrev-ref '@{upstream}' 2>$null
+$codigo = $LASTEXITCODE
+$ErrorActionPreference = 'Stop'
+if ($codigo -eq 0 -and $seguimiento) {
+    & $git -C $proyecto push
+} else {
+    Write-Host "   primera subida: configurando la rama main"
+    & $git -C $proyecto push -u origin main
+}
 
 Write-Host ""
 Write-Host "Listo. En un minuto los cambios se verán en:"
