@@ -5,6 +5,13 @@ desktop.ini
 *.tmp
 *.log
 
+# Respaldos y archivos de trabajo
+*.corrupto
+*.corrupto2
+*.bak
+# copias que el navegador descarga con "(1)", "(2)"... (datos.js NO se ignora)
+datos (*).js
+
 # Configuración local del editor (se conserva la compartida)
 .vscode/*
 !.vscode/settings.json
