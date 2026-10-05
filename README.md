@@ -1,5 +1,20 @@
 # Copa Nacional de Fútbol — Página de resultados
 
+## 🔗 Enlaces para compartir
+
+| Enlace | Dirección |
+|---|---|
+| **Corto (recomendado)** | **https://royrafa010-bit.github.io/** |
+| Página completa | https://royrafa010-bit.github.io/copa-futbol/ |
+| Aún más corto (clck.ru) | https://clck.ru/3WKDqV |
+| Repositorio | https://github.com/royrafa010-bit/copa-futbol |
+| Código QR | https://royrafa010-bit.github.io/copa-futbol/codigo-qr.png |
+
+El enlace corto es un **sitio de usuario de GitHub Pages** (`royrafa010-bit.github.io`) con una página que
+redirige a la copa: es tuyo, no depende de ningún acortador externo y no caduca.
+
+---
+
 Página web para seguir una copa de fútbol: **tabla de posiciones automática** de los dos grupos,
 **fase de grupos con todos los enfrentamientos**, **eliminatorias (cuartos, semifinales, tercer lugar y
 final)**, **plantilla de jugadores** y **tabla de goleadores**.
