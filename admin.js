@@ -179,7 +179,7 @@ function revisarCompatibilidad() {
   const faltan = [];
   if (typeof pintarPlantilla !== "function") faltan.push("app.js antiguo");
   ["seccion-torneo", "seccion-equipos", "seccion-partidos", "seccion-plantilla", "seccion-goleadores",
-   "seccion-amarillas", "seccion-rojas", "seccion-seguridad", "seccion-datos"].forEach((id) => {
+   "seccion-seguridad", "seccion-datos"].forEach((id) => {
     if (!document.getElementById(id)) faltan.push("#" + id);
   });
   if (faltan.length) {
@@ -227,6 +227,36 @@ function celdaInput(valor, alCambiar, tipo, ancho, lista) {
   if (lista) input.setAttribute("list", lista);
   input.addEventListener("change", () => alCambiar(input.value));
   td.appendChild(input);
+  return td;
+}
+
+/* Desplegable con todos los equipos (y los comodines de las eliminatorias),
+   para elegir el equipo de cada enfrentamiento sin escribir. */
+function opcionesEquipos() {
+  const equipos = EQUIPOS.map((e) => [e.id, e.nombre]);
+  const comodines = [...new Set(
+    PARTIDOS.flatMap((p) => [p.local, p.visitante]).filter((id) => id && !equipoPorId[id])
+  )].sort();
+  return [["", "(elegir equipo)"]].concat(equipos, comodines.map((c) => [c, c]));
+}
+
+function celdaSelect(valor, opciones, alCambiar, ancho, titulo) {
+  const td = document.createElement("td");
+  const sel = document.createElement("select");
+  sel.className = "campo-tabla";
+  if (ancho) sel.style.width = ancho;
+  if (titulo) sel.title = titulo;
+  const lista = opciones.slice();
+  if (!lista.some(([v]) => v === (valor || ""))) lista.push([valor || "", valor || "(elegir equipo)"]);
+  lista.forEach(([v, texto]) => {
+    const op = document.createElement("option");
+    op.value = v;
+    op.textContent = texto;
+    sel.appendChild(op);
+  });
+  sel.value = valor || "";
+  sel.addEventListener("change", () => alCambiar(sel.value));
+  td.appendChild(sel);
   return td;
 }
 
@@ -346,13 +376,20 @@ function construirPartidos() {
 
   const acciones = crear("div", "acciones-admin");
   acciones.appendChild(boton("+ Añadir partido", "principal", () => {
-    PARTIDOS.push({ fase: "Grupo A", jornada: "Jornada 1", fecha: "", local: "", visitante: "", golesLocal: null, golesVisitante: null });
+    const primero = EQUIPOS[0] ? EQUIPOS[0].id : "";
+    const segundo = EQUIPOS[1] ? EQUIPOS[1].id : "";
+    PARTIDOS.push({
+      fase: "Grupo A", jornada: "Jornada 1", fecha: "", local: primero, visitante: segundo,
+      golesLocal: null, golesVisitante: null,
+    });
     construirPartidos();
     trasCambio("Partido añadido");
   }));
-  acciones.appendChild(crear("span", "nota-admin", "Deja los goles vacíos si el partido no se ha jugado."));
+  acciones.appendChild(crear("span", "nota-admin",
+    "Cada equipo se elige en su desplegable. Deja los goles vacíos si el partido no se ha jugado."));
   caja.appendChild(acciones);
 
+  const opciones = opcionesEquipos();
   const fases = [...new Set(PARTIDOS.map((p) => p.fase))];
   fases.forEach((fase) => {
     const titulo = crear("h3", "titulo-fase", fase + " (" + PARTIDOS.filter((p) => p.fase === fase).length + ")");
@@ -368,12 +405,29 @@ function construirPartidos() {
         renderizarTodo();
         avisarGuardado("Marcador");
       };
+      const cambiarEquipo = (lado) => (v) => {
+        if (lado === "local") p.local = v;
+        else p.visitante = v;
+        // si el visitante queda igual que el local, se avisa y se deja el campo vacío
+        if (p.local && p.local === p.visitante) {
+          if (lado === "local") p.visitante = "";
+          else p.local = "";
+          avisarProblema("Un equipo no puede jugar contra sí mismo: elige otro.");
+          construirPartidos();
+          guardarEstado();
+          renderizarTodo();
+          return;
+        }
+        guardarEstado();
+        renderizarTodo();
+        avisarGuardado("Enfrentamiento");
+      };
       return filaConCeldas([
-        celdaInput(p.fase, (v) => { p.fase = v; construirPartidos(); trasCambio("Partido"); }, "text", "130px"),
+        celdaInput(p.fase, (v) => { p.fase = v; construirPartidos(); trasCambio("Partido"); }, "text", "130px", "lista-fases"),
         celdaInput(p.jornada, (v) => { p.jornada = v; construirPartidos(); trasCambio("Jornada"); }, "text", "120px"),
         celdaInput(p.fecha, (v) => { p.fecha = v; trasCambio("Fecha"); }, "text", "120px"),
-        celdaInput(p.local, (v) => { p.local = v.trim(); guardarEstado(); renderizarTodo(); avisarGuardado("Partido"); }, "text", "130px", "lista-equipos"),
-        celdaInput(p.visitante, (v) => { p.visitante = v.trim(); guardarEstado(); renderizarTodo(); avisarGuardado("Partido"); }, "text", "130px", "lista-equipos"),
+        celdaSelect(p.local, opciones, cambiarEquipo("local"), "150px", "Equipo local"),
+        celdaSelect(p.visitante, opciones, cambiarEquipo("visitante"), "150px", "Equipo visitante"),
         celdaInput(p.golesLocal, cambiarGoles("local"), "number", "60px"),
         celdaInput(p.golesVisitante, cambiarGoles("visitante"), "number", "60px"),
         celdaBotones([
@@ -384,6 +438,13 @@ function construirPartidos() {
 
     caja.appendChild(tablaAdmin(["Fase", "Jornada", "Fecha", "Local", "Visitante", "GL", "GV", ""], filas));
   });
+
+  /* resumen de equipos usados, para ver de un vistazo que no falte ninguno */
+  const usados = new Set(PARTIDOS.flatMap((p) => [p.local, p.visitante]).filter((id) => equipoPorId[id]));
+  const sinUsar = EQUIPOS.filter((e) => !usados.has(e.id));
+  caja.appendChild(crear("p", "nota-admin",
+    "Equipos presentes en los enfrentamientos: " + usados.size + " de " + EQUIPOS.length + "." +
+    (sinUsar.length ? " Sin ningún partido: " + sinUsar.map((e) => e.nombre).join(", ") + "." : " Todos tienen partidos.")));
 }
 
 function construirPlantilla() {
@@ -391,52 +452,82 @@ function construirPlantilla() {
   if (!caja) return;
   caja.innerHTML = "";
 
+  const conNombre = () => JUGADORES.filter((j) => String(j.nombre || "").trim() !== "").length;
+
+  /* --- indicaciones y acciones generales --- */
+  const resumen = crear("p", "nota-admin");
+  resumen.textContent =
+    "Ya están los " + EQUIPOS.length + " equipos con " + JUGADORES.length + " fichas (dorsal y posición puestos). " +
+    "Escribe el nombre de cada jugador: las fichas sin nombre no se muestran en la página. " +
+    "Nombres puestos: " + conNombre() + ".";
+  caja.appendChild(resumen);
+
   const acciones = crear("div", "acciones-admin");
-  acciones.appendChild(boton("+ Añadir jugador", "principal", () => {
-    JUGADORES.push({
-      nombre: "",
-      dorsal: JUGADORES.length + 1,
-      posicion: "Portero",
-      equipo: EQUIPOS[0] ? EQUIPOS[0].id : "",
-    });
-    construirPlantilla();
-    trasCambio("Jugador añadido");
-  }));
-  acciones.appendChild(boton("Ordenar por equipo y dorsal", "secundario", () => {
+  acciones.appendChild(boton("Ordenar todo por equipo y dorsal", "secundario", () => {
+    const orden = EQUIPOS.map((e) => e.id);
     JUGADORES.sort(
-      (a, b) => String(a.equipo).localeCompare(String(b.equipo)) || (Number(a.dorsal) || 0) - (Number(b.dorsal) || 0)
+      (a, b) =>
+        orden.indexOf(a.equipo) - orden.indexOf(b.equipo) || (Number(a.dorsal) || 0) - (Number(b.dorsal) || 0)
     );
     construirPlantilla();
     trasCambio("Plantilla ordenada");
   }));
-  acciones.appendChild(crear("span", "nota-admin", "Total de jugadores: " + JUGADORES.length));
+  acciones.appendChild(boton("Vaciar todos los nombres", "peligro", () => {
+    JUGADORES.forEach((j) => { j.nombre = ""; });
+    construirPlantilla();
+    trasCambio("Nombres vaciados");
+  }));
   caja.appendChild(acciones);
 
-  const filas = JUGADORES.map((j) => {
-    const indice = JUGADORES.indexOf(j);
-    return filaConCeldas([
-      celdaInput(j.equipo, (v) => { j.equipo = v.trim(); trasCambio("Equipo"); }, "text", "110px", "lista-equipos"),
-      celdaInput(j.dorsal, (v) => { j.dorsal = v === "" ? "" : Number(v); trasCambio("Dorsal"); }, "number", "70px"),
-      celdaInput(j.nombre, (v) => { j.nombre = v; trasCambio("Jugador"); }, "text", "240px"),
-      celdaInput(j.posicion, (v) => { j.posicion = v; trasCambio("Posición"); }, "text", "160px", "lista-posiciones"),
-      celdaBotones([
-        {
-          texto: "✕",
-          clase: "peligro",
-          accion: () => {
-            JUGADORES.splice(indice, 1);
-            construirPlantilla();
-            trasCambio("Jugador eliminado");
+  /* --- un bloque por equipo --- */
+  EQUIPOS.forEach((equipo) => {
+    const suyos = JUGADORES.filter((j) => j.equipo === equipo.id);
+    if (suyos.length === 0) return;
+
+    const bloque = crear("section", "bloque-equipo");
+    const titulo = crear("h3", "titulo-fase", equipo.nombre);
+    titulo.appendChild(crear("span", "contador",
+      suyos.filter((j) => String(j.nombre || "").trim() !== "").length + " de " + suyos.length + " puestos"));
+    bloque.appendChild(titulo);
+
+    const botonera = crear("div", "acciones-admin");
+    botonera.appendChild(boton("+ Añadir jugador a " + equipo.nombre, "secundario", () => {
+      const usados = suyos.map((j) => Number(j.dorsal) || 0);
+      let dorsal = 1;
+      while (usados.includes(dorsal) && dorsal < 99) dorsal++;
+      JUGADORES.push({ nombre: "", dorsal: dorsal, posicion: "Delantero", equipo: equipo.id });
+      construirPlantilla();
+      trasCambio("Jugador añadido");
+    }));
+    bloque.appendChild(botonera);
+
+    const filas = suyos.map((j) => {
+      const indice = JUGADORES.indexOf(j);
+      return filaConCeldas([
+        celdaInput(j.dorsal, (v) => { j.dorsal = v === "" ? "" : Number(v); trasCambio("Dorsal"); }, "number", "70px"),
+        celdaInput(j.nombre, (v) => { j.nombre = v; trasCambio("Jugador"); }, "text", "260px"),
+        celdaInput(j.posicion, (v) => { j.posicion = v; trasCambio("Posición"); }, "text", "170px", "lista-posiciones"),
+        celdaBotones([
+          {
+            texto: "✕",
+            clase: "peligro",
+            accion: () => {
+              JUGADORES.splice(indice, 1);
+              construirPlantilla();
+              trasCambio("Jugador eliminado");
+            },
           },
-        },
-      ]),
-    ]);
+        ]),
+      ]);
+    });
+
+    bloque.appendChild(tablaAdmin(["Dorsal", "Nombre y apellidos", "Posición", ""], filas));
+    caja.appendChild(bloque);
   });
 
-  caja.appendChild(tablaAdmin(["Equipo", "Dorsal", "Nombre y apellidos", "Posición", ""], filas));
   caja.appendChild(crear("p", "nota-admin",
-    "En la página la plantilla aparece agrupada por equipo y ordenada por dorsal, con un color por posición. " +
-    "Posiciones sugeridas: Portero, Defensa, Mediocampista, Delantero (puedes escribir otra)."));
+    "Plantilla de referencia: 3 porteros, 6 defensas, 6 mediocampistas y 5 delanteros. " +
+    "Puedes cambiar cualquier dorsal o posición, borrar fichas con ✕ y añadir más con el botón de cada equipo."));
 }
 
 function construirGoleadores() {
@@ -466,47 +557,6 @@ function construirGoleadores() {
 
   caja.appendChild(tablaAdmin(["Jugador", "Equipo", "Goles", ""], filas));
   caja.appendChild(crear("p", "nota-admin", "La tabla se muestra ordenada de mayor a menor cantidad de goles."));
-}
-
-function construirTarjetas(clave, contenedorId, tipo, titulo) {
-  const lista = clave === "amarillas" ? AMARILLAS : ROJAS;
-  const caja = document.getElementById(contenedorId);
-  if (!caja) return;
-  caja.innerHTML = "";
-
-  const acciones = crear("div", "acciones-admin");
-  acciones.appendChild(boton("+ Añadir tarjeta", "principal", () => {
-    lista.push({ jugador: "", equipo: EQUIPOS[0] ? EQUIPOS[0].id : "", cantidad: 1 });
-    construirTarjetas(clave, contenedorId, tipo, titulo);
-    trasCambio("Tarjeta añadida");
-  }));
-  caja.appendChild(acciones);
-
-  const mover = (indice, paso) => {
-    const destino = indice + paso;
-    if (destino < 0 || destino >= lista.length) return;
-    const item = lista.splice(indice, 1)[0];
-    lista.splice(destino, 0, item);
-    construirTarjetas(clave, contenedorId, tipo, titulo);
-    trasCambio("Orden cambiado");
-  };
-
-  const filas = lista.map((t) => {
-    const indice = lista.indexOf(t);
-    return filaConCeldas([
-      celdaInput(t.jugador, (v) => { t.jugador = v; trasCambio("Tarjeta"); }, "text", "220px"),
-      celdaInput(t.equipo, (v) => { t.equipo = v.trim(); trasCambio("Equipo"); }, "text", "120px", "lista-equipos"),
-      celdaInput(t.cantidad, (v) => { t.cantidad = Number(v) || 0; trasCambio("Cantidad"); }, "number", "70px"),
-      celdaBotones([
-        { texto: "↑", clase: "secundario", accion: () => mover(indice, -1) },
-        { texto: "↓", clase: "secundario", accion: () => mover(indice, 1) },
-        { texto: "✕", clase: "peligro", accion: () => { lista.splice(indice, 1); construirTarjetas(clave, contenedorId, tipo, titulo); trasCambio("Tarjeta eliminada"); } },
-      ]),
-    ]);
-  });
-
-  caja.appendChild(tablaAdmin(["Jugador", "Equipo", "Cantidad", "Orden"], filas));
-  caja.appendChild(crear("p", "nota-admin", "Se muestran en este mismo orden: usa ↑ y ↓ para cambiarlo."));
 }
 
 function construirSeguridad() {
@@ -580,10 +630,6 @@ function generarDatosJS() {
     "",
     "const JUGADORES = " + JSON.stringify(JUGADORES, null, 2) + ";",
     "",
-    "const AMARILLAS = " + JSON.stringify(AMARILLAS, null, 2) + ";",
-    "",
-    "const ROJAS = " + JSON.stringify(ROJAS, null, 2) + ";",
-    "",
   ].join("\n");
 }
 
@@ -655,8 +701,6 @@ function construirSecciones() {
     ["Partidos", construirPartidos],
     ["Plantilla", construirPlantilla],
     ["Goleadores", construirGoleadores],
-    ["Amarillas", () => construirTarjetas("amarillas", "seccion-amarillas", "amarilla", "Amarillas")],
-    ["Rojas", () => construirTarjetas("rojas", "seccion-rojas", "roja", "Rojas")],
     ["Seguridad", construirSeguridad],
     ["Datos", construirDatos],
   ];

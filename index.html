@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Copa Nacional de Fútbol — Resultados</title>
-  <link rel="stylesheet" href="estilos.css?v=6">
+  <link rel="stylesheet" href="estilos.css?v=7">
 </head>
 <body>
 
@@ -24,8 +24,6 @@
     <button class="pestana" data-panel="eliminatorias">Eliminatorias</button>
     <button class="pestana" data-panel="plantilla">Plantilla</button>
     <button class="pestana" data-panel="goleadores">Goleadores</button>
-    <button class="pestana" data-panel="amarillas">🟨 Amarillas</button>
-    <button class="pestana" data-panel="rojas">🟥 Rojas</button>
     <span class="espaciador"></span>
     <button class="accion" onclick="window.print()">Imprimir</button>
     <button class="accion" onclick="location.reload()">Actualizar</button>
@@ -46,6 +44,11 @@
     </section>
 
     <section id="panel-plantilla" class="panel" hidden>
+      <div class="barra-plantilla">
+        <label for="selector-equipo">Equipo:</label>
+        <select id="selector-equipo"></select>
+      </div>
+      <p id="resumen-plantilla" class="nota-admin"></p>
       <div id="lista-plantilla" class="rejilla"></div>
     </section>
 
@@ -53,20 +56,12 @@
       <div id="lista-goleadores" class="rejilla"></div>
     </section>
 
-    <section id="panel-amarillas" class="panel" hidden>
-      <div id="lista-amarillas" class="rejilla"></div>
-    </section>
-
-    <section id="panel-rojas" class="panel" hidden>
-      <div id="lista-rojas" class="rejilla"></div>
-    </section>
-
     <aside class="ayuda">
       <strong>¿Cómo se configura?</strong>
       Pulsa <strong>⚙️ Administrar</strong> y entra con tu contraseña. Desde ahí puedes cambiar el nombre del
-      torneo, los equipos, los partidos y marcadores, la plantilla de jugadores, los goleadores y las tarjetas
-      amarillas y rojas. Los cambios se guardan en el navegador y <strong>la tabla de posiciones de los dos
-      grupos se recalcula sola</strong>. Solo tú puedes entrar.
+      torneo, los equipos, los enfrentamientos (con marcadores), la plantilla de jugadores y los goleadores.
+      Los cambios se guardan en el navegador y <strong>la tabla de posiciones de los dos grupos se recalcula
+      sola</strong>. Solo tú puedes entrar.
       <br><br>
       <strong>Si el panel sale vacío o no te deja escribir</strong>, es que el navegador guardó una versión
       vieja: pulsa <kbd>Ctrl</kbd> + <kbd>F5</kbd> para recargar todo.
@@ -115,8 +110,6 @@
         <button class="pestana-admin" data-seccion="partidos" type="button">Partidos</button>
         <button class="pestana-admin" data-seccion="plantilla" type="button">Plantilla</button>
         <button class="pestana-admin" data-seccion="goleadores" type="button">Goleadores</button>
-        <button class="pestana-admin" data-seccion="amarillas" type="button">🟨 Amarillas</button>
-        <button class="pestana-admin" data-seccion="rojas" type="button">🟥 Rojas</button>
         <button class="pestana-admin" data-seccion="seguridad" type="button">Seguridad</button>
         <button class="pestana-admin" data-seccion="datos" type="button">Datos</button>
       </nav>
@@ -127,8 +120,6 @@
         <div id="seccion-partidos" class="seccion-admin" hidden></div>
         <div id="seccion-plantilla" class="seccion-admin" hidden></div>
         <div id="seccion-goleadores" class="seccion-admin" hidden></div>
-        <div id="seccion-amarillas" class="seccion-admin" hidden></div>
-        <div id="seccion-rojas" class="seccion-admin" hidden></div>
         <div id="seccion-seguridad" class="seccion-admin" hidden></div>
         <div id="seccion-datos" class="seccion-admin" hidden></div>
       </div>
@@ -143,11 +134,19 @@
     <option value="Mediocampista"></option>
     <option value="Delantero"></option>
   </datalist>
+  <datalist id="lista-fases">
+    <option value="Grupo A"></option>
+    <option value="Grupo B"></option>
+    <option value="Cuartos de final"></option>
+    <option value="Semifinal"></option>
+    <option value="Tercer lugar"></option>
+    <option value="Final"></option>
+  </datalist>
 
   <!-- El orden importa: datos → dibujo de la página → panel de administración.
-       El ?v=6 obliga al navegador a usar siempre la versión nueva de cada archivo. -->
-  <script src="datos.js?v=6"></script>
-  <script src="app.js?v=6"></script>
-  <script src="admin.js?v=6"></script>
+       El ?v=7 obliga al navegador a usar siempre la versión nueva de cada archivo. -->
+  <script src="datos.js?v=7"></script>
+  <script src="app.js?v=7"></script>
+  <script src="admin.js?v=7"></script>
 </body>
 </html>

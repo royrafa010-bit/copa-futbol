@@ -25,11 +25,6 @@ function tituloRonda(ronda) {
   return ronda;
 }
 
-function pastilla(cantidad, tipo) {
-  if (!cantidad) return '<span class="pastilla cero">0</span>';
-  return `<span class="pastilla ${tipo}">${cantidad}</span>`;
-}
-
 /* ============================================================================
    ALMACÉN: guarda el estado en el navegador y lo recupera al abrir la página
    ============================================================================ */
@@ -42,8 +37,6 @@ function estadoActual() {
     partidos: PARTIDOS,
     goleadores: GOLEADORES,
     jugadores: JUGADORES,
-    amarillas: AMARILLAS,
-    rojas: ROJAS,
   };
 }
 
@@ -59,8 +52,6 @@ function aplicarEstado(nuevo) {
   reemplazarContenido(PARTIDOS, nuevo.partidos);
   reemplazarContenido(GOLEADORES, nuevo.goleadores);
   reemplazarContenido(JUGADORES, nuevo.jugadores);
-  reemplazarContenido(AMARILLAS, nuevo.amarillas);
-  reemplazarContenido(ROJAS, nuevo.rojas);
   return true;
 }
 
@@ -305,95 +296,112 @@ function clasePosicion(posicion) {
   return "pos-otra";
 }
 
+/* Jugadores de un equipo, ordenados por dorsal. Si soloConNombre, deja fuera
+   las fichas a las que todavía no les has puesto nombre. */
+function jugadoresDe(equipoId, soloConNombre) {
+  return JUGADORES.filter((j) => j.equipo === equipoId)
+    .filter((j) => (soloConNombre ? String(j.nombre || "").trim() !== "" : true))
+    .sort(
+      (a, b) => (Number(a.dorsal) || 0) - (Number(b.dorsal) || 0) || String(a.nombre).localeCompare(String(b.nombre))
+    );
+}
+
+/* Tarjeta con la plantilla de un equipo */
+function tarjetaPlantilla(equipo, jugadores, totalEquipo) {
+  const tarjeta = crear("section", "tarjeta");
+  const titulo = crear("h2", null, equipo.nombre);
+  titulo.appendChild(
+    crear("span", "contador", jugadores.length + " de " + totalEquipo + (totalEquipo === 1 ? " puesto" : " puestos"))
+  );
+  tarjeta.appendChild(titulo);
+
+  const tabla = crear("table", "posiciones");
+  tabla.innerHTML =
+    "<thead><tr><th>Dorsal</th><th class='equipo'>Jugador</th><th>Posición</th></tr></thead><tbody></tbody>";
+  const cuerpo = tabla.querySelector("tbody");
+
+  jugadores.forEach((j) => {
+    const dorsal = j.dorsal === "" || j.dorsal === null || j.dorsal === undefined ? "—" : j.dorsal;
+    const tr = crear("tr");
+    tr.innerHTML =
+      `<td class="num dorsal">${dorsal}</td>` +
+      `<td class="equipo">${j.nombre}</td>` +
+      `<td><span class="posicion ${clasePosicion(j.posicion)}">${j.posicion || "—"}</span></td>`;
+    cuerpo.appendChild(tr);
+  });
+
+  tarjeta.appendChild(tabla);
+  return tarjeta;
+}
+
+/* Selector de equipo de la pestaña Plantilla */
+function equipoSeleccionado() {
+  const sel = document.getElementById("selector-equipo");
+  return sel && sel.value ? sel.value : "todos";
+}
+
+function rellenarSelectorEquipos() {
+  const sel = document.getElementById("selector-equipo");
+  if (!sel) return;
+  const anterior = sel.value || "todos";
+  sel.innerHTML = "";
+  [["todos", "Todos los equipos"]].concat(EQUIPOS.map((e) => [e.id, e.nombre])).forEach(([valor, texto]) => {
+    const opcion = document.createElement("option");
+    opcion.value = valor;
+    opcion.textContent = texto;
+    sel.appendChild(opcion);
+  });
+  sel.value = EQUIPOS.some((e) => e.id === anterior) || anterior === "todos" ? anterior : "todos";
+  if (!sel.dataset.listo) {
+    sel.dataset.listo = "1";
+    sel.addEventListener("change", () => pintarPlantilla());
+  }
+}
+
 function pintarPlantilla() {
   const contenedor = document.getElementById("lista-plantilla");
   if (!contenedor) return;
+
+  const conNombre = JUGADORES.filter((j) => String(j.nombre || "").trim() !== "");
 
   if (JUGADORES.length === 0) {
     const tarjeta = crear("section", "tarjeta");
     tarjeta.appendChild(crear("h2", null, "Plantilla de jugadores"));
     tarjeta.appendChild(
-      mensajeVacio("Todavía no hay jugadores. Añádelos desde ⚙️ Administrar → Plantilla (nombre, dorsal y posición).")
+      mensajeVacio("Todavía no hay jugadores. Añádelos desde ⚙️ Administrar → Plantilla.")
     );
     contenedor.appendChild(tarjeta);
     return;
   }
 
-  EQUIPOS.forEach((equipo) => {
-    const suyos = JUGADORES.filter((j) => j.equipo === equipo.id).sort(
-      (a, b) => (Number(a.dorsal) || 0) - (Number(b.dorsal) || 0) || String(a.nombre).localeCompare(String(b.nombre))
-    );
-    if (suyos.length === 0) return;
-
+  if (conNombre.length === 0) {
     const tarjeta = crear("section", "tarjeta");
-    const titulo = crear("h2", null, equipo.nombre);
-    titulo.appendChild(crear("span", "contador", suyos.length + (suyos.length === 1 ? " jugador" : " jugadores")));
-    tarjeta.appendChild(titulo);
-
-    const tabla = crear("table", "posiciones");
-    tabla.innerHTML =
-      "<thead><tr><th>Dorsal</th><th class='equipo'>Jugador</th><th>Posición</th></tr></thead><tbody></tbody>";
-    const cuerpo = tabla.querySelector("tbody");
-
-    suyos.forEach((j) => {
-      const dorsal = j.dorsal === "" || j.dorsal === null || j.dorsal === undefined ? "—" : j.dorsal;
-      const tr = crear("tr");
-      tr.innerHTML =
-        `<td class="num dorsal">${dorsal}</td>` +
-        `<td class="equipo">${j.nombre || "(sin nombre)"}</td>` +
-        `<td><span class="posicion ${clasePosicion(j.posicion)}">${j.posicion || "—"}</span></td>`;
-      cuerpo.appendChild(tr);
-    });
-
-    tarjeta.appendChild(tabla);
+    tarjeta.appendChild(crear("h2", null, "Plantilla de jugadores"));
+    tarjeta.appendChild(
+      mensajeVacio("La plantilla está lista pero sin nombres: entra en ⚙️ Administrar → Plantilla y escríbelos.")
+    );
     contenedor.appendChild(tarjeta);
-  });
-}
-
-/* ------------------------ apartados de tarjetas ------------------------ */
-function pintarListaTarjetas(contenedorId, lista, tipo, titulo, columna, vacio) {
-  const contenedor = document.getElementById(contenedorId);
-  if (!contenedor) return;
-  const tarjeta = crear("section", "tarjeta");
-  tarjeta.appendChild(crear("h2", null, titulo));
-
-  if (lista.length === 0) {
-    tarjeta.appendChild(mensajeVacio(vacio));
-  } else {
-    const tabla = crear("table", "posiciones");
-    tabla.innerHTML =
-      `<thead><tr><th>#</th><th class='equipo'>Jugador</th><th>Equipo</th>` +
-      `<th class='${tipo}'>${columna}</th></tr></thead><tbody></tbody>`;
-    const cuerpo = tabla.querySelector("tbody");
-
-    lista.forEach((t, i) => {
-      const tr = crear("tr");
-      tr.innerHTML =
-        `<td class="num">${i + 1}</td>` +
-        `<td class="equipo">${t.jugador}</td>` +
-        `<td>${nombreEquipo(t.equipo)}</td>` +
-        `<td class="num">${pastilla(t.cantidad, tipo)}</td>`;
-      cuerpo.appendChild(tr);
-    });
-
-    tarjeta.appendChild(tabla);
+    return;
   }
 
-  contenedor.appendChild(tarjeta);
-}
+  const seleccion = equipoSeleccionado();
+  const equipos = seleccion === "todos" ? EQUIPOS : EQUIPOS.filter((e) => e.id === seleccion);
 
-function pintarAmarillas() {
-  pintarListaTarjetas(
-    "lista-amarillas", AMARILLAS, "amarilla", "Tarjetas amarillas", "Amarillas",
-    "Todavía no hay tarjetas amarillas."
-  );
-}
+  equipos.forEach((equipo) => {
+    const total = JUGADORES.filter((j) => j.equipo === equipo.id).length;
+    const jugadores = jugadoresDe(equipo.id, true);
+    if (jugadores.length === 0) return;
+    contenedor.appendChild(tarjetaPlantilla(equipo, jugadores, total));
+  });
 
-function pintarRojas() {
-  pintarListaTarjetas(
-    "lista-rojas", ROJAS, "roja", "Tarjetas rojas", "Rojas",
-    "Todavía no hay tarjetas rojas."
-  );
+  const resumen = document.getElementById("resumen-plantilla");
+  if (resumen) {
+    const equiposConNombre = EQUIPOS.filter((e) => jugadoresDe(e.id, true).length > 0).length;
+    resumen.textContent =
+      conNombre.length + (conNombre.length === 1 ? " jugador con nombre" : " jugadores con nombre") +
+      " en " + equiposConNombre + (equiposConNombre === 1 ? " equipo" : " equipos") +
+      " · " + JUGADORES.length + " fichas en total (los que no tengan nombre no se muestran).";
+  }
 }
 
 /* ------------------------------ cabecera ------------------------------ */
@@ -411,11 +419,12 @@ function pintarEncabezado() {
   document.title = `${TORNEO.nombre} ${TORNEO.temporada} — Resultados`;
 
   const jugados = PARTIDOS.filter(estaJugado).length;
+  const conNombre = JUGADORES.filter((j) => String(j.nombre || "").trim() !== "").length;
   const resumen = document.getElementById("resumen");
   if (!resumen) return;
   [
     ["Equipos", EQUIPOS.length],
-    ["Jugadores", JUGADORES.length],
+    ["Jugadores", conNombre],
     ["Partidos", PARTIDOS.length],
     ["Jugados", jugados],
     ["Por jugar", PARTIDOS.length - jugados],
@@ -442,7 +451,7 @@ function activarPestanas() {
 
 /* ------------------------------ dibujar todo ------------------------------ */
 function renderizarTodo() {
-  ["resumen", "lista-posiciones", "lista-grupos", "lista-eliminatorias", "lista-plantilla", "lista-goleadores", "lista-amarillas", "lista-rojas"].forEach((id) => {
+  ["resumen", "lista-posiciones", "lista-grupos", "lista-eliminatorias", "lista-plantilla", "lista-goleadores"].forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.innerHTML = "";
   });
@@ -451,10 +460,9 @@ function renderizarTodo() {
     ["posiciones", pintarPosiciones],
     ["grupos", pintarGrupos],
     ["eliminatorias", pintarEliminatorias],
+    ["selector de equipos", rellenarSelectorEquipos],
     ["plantilla", pintarPlantilla],
     ["goleadores", pintarGoleadores],
-    ["amarillas", pintarAmarillas],
-    ["rojas", pintarRojas],
   ];
   vistas.forEach(([nombre, pintar]) => {
     try {

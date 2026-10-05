@@ -254,20 +254,7 @@ tr.clasifica td:first-child { border-left: 3px solid var(--verde); }
 }
 
 /* ------------------------------- tarjetas (disciplina) ------------------------------- */
-th.amarilla { color: #8a6100; }
-th.roja { color: #a52222; }
-
-.pastilla {
-  display: inline-block;
-  min-width: 26px;
-  padding: .05rem .4rem;
-  border-radius: 4px;
-  font-weight: 700;
-  font-size: .8rem;
-}
-.pastilla.amarilla { background: #ffd166; color: #6b4b00; }
-.pastilla.roja { background: #d63b3b; color: #ffffff; }
-.pastilla.cero { background: #eef2f6; color: #9aa6b2; font-weight: 500; }
+/* (los apartados de tarjetas se retiraron; se mantienen los estilos de posición) */
 
 .numero-partido {
   font-size: .72rem;
@@ -444,6 +431,43 @@ th.roja { color: #a52222; }
 
 /* ------------------------------- plantilla ------------------------------- */
 td.dorsal { font-weight: 700; color: var(--azul); }
+
+.barra-plantilla {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  flex-wrap: wrap;
+  margin-bottom: .3rem;
+}
+.barra-plantilla label {
+  font-size: .78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--gris);
+}
+.barra-plantilla select {
+  padding: .45rem .6rem;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: .9rem;
+  font-weight: 600;
+  color: var(--azul);
+  background: var(--blanco);
+  min-width: 240px;
+}
+
+/* bloques de equipo dentro del panel de administración */
+.bloque-equipo {
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  padding: .6rem .7rem .3rem;
+  margin-bottom: .9rem;
+  background: #fbfdff;
+}
+.bloque-equipo h3.titulo-fase { display: flex; align-items: center; gap: .5rem; margin-top: 0; }
+select.campo-tabla { background: var(--blanco); color: var(--azul); }
 
 .posicion {
   display: inline-block;
