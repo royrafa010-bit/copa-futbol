@@ -75,6 +75,38 @@ jobs:
           npx cap add android
           npx cap sync android
 
+      - name: Poner el icono de la copa (balon)
+        run: |
+          python3 -m pip install --quiet --disable-pip-version-check pillow
+          python3 - <<'PY'
+          import os
+          from PIL import Image, ImageDraw
+
+          origen = Image.open("iconos/icono-512.png").convert("RGBA")
+          densidades = {"mdpi": 48, "hdpi": 72, "xhdpi": 96, "xxhdpi": 144, "xxxhdpi": 192}
+          base = "android/app/src/main/res"
+
+          for densidad, tam in densidades.items():
+              carpeta = os.path.join(base, "mipmap-" + densidad)
+              os.makedirs(carpeta, exist_ok=True)
+              icono = origen.resize((tam, tam), Image.LANCZOS)
+              icono.save(os.path.join(carpeta, "ic_launcher.png"))
+              icono.save(os.path.join(carpeta, "ic_launcher_foreground.png"))
+              mascara = Image.new("L", (tam, tam), 0)
+              ImageDraw.Draw(mascara).ellipse((0, 0, tam - 1, tam - 1), fill=255)
+              redondo = icono.copy()
+              redondo.putalpha(mascara)
+              redondo.save(os.path.join(carpeta, "ic_launcher_round.png"))
+              print("icono", densidad, tam)
+
+          # se quitan los iconos adaptativos del template para que se use el balon
+          for xml in ("ic_launcher.xml", "ic_launcher_round.xml"):
+              ruta = os.path.join(base, "mipmap-anydpi-v26", xml)
+              if os.path.exists(ruta):
+                  os.remove(ruta)
+                  print("quitado", ruta)
+          PY
+
       - name: Compilar el APK
         run: |
           cd android
