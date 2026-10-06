@@ -9,6 +9,13 @@ desktop.ini
 *.apk
 *.aab
 
+# Clave de firma de la app: NUNCA se sube al repositorio
+firma/
+*.p12
+*.jks
+*.keystore
+_keystore.b64
+
 # Respaldos y archivos de trabajo
 *.corrupto
 *.corrupto2

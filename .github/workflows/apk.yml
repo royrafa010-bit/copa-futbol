@@ -1,12 +1,14 @@
 # ============================================================================
-#  Compila el APK de Android en la nube (GitHub Actions)
+#  Compila y FIRMA el APK de Android en la nube (GitHub Actions)
 # ----------------------------------------------------------------------------
-#  No necesitas Android Studio ni el SDK en tu PC: GitHub lo hace por ti y
-#  deja el APK como "artifact" para que lo descargues.
+#  No necesitas Android Studio ni el SDK: GitHub lo hace por ti y deja el APK
+#  firmado como "artifact" y también en la sección Releases (descarga directa).
 #
-#  Se ejecuta:
-#   - solo, cada vez que cambias la página en la rama main
-#   - a mano, desde la pestaña "Actions" del repositorio (botón Run workflow)
+#  La clave de firma no está en el repositorio: vive en los secretos cifrados
+#     FIRMA_KEYSTORE_BASE64  ·  FIRMA_PASSWORD  ·  FIRMA_ALIAS
+#
+#  Se ejecuta solo cada vez que cambias la página en la rama main, o a mano
+#  desde la pestaña "Actions" (botón Run workflow).
 # ============================================================================
 
 name: Compilar APK de Android
@@ -26,9 +28,12 @@ on:
       - ".github/workflows/apk.yml"
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   compilar-apk:
-    name: Generar el APK
+    name: Generar el APK firmado
     runs-on: ubuntu-latest
 
     steps:
@@ -82,7 +87,7 @@ jobs:
           import os
           from PIL import Image, ImageDraw
 
-          origen = Image.open("iconos/icono-512.png").convert("RGBA")
+          origen = Image.open("iconos/icono-1024.png").convert("RGBA")
           densidades = {"mdpi": 48, "hdpi": 72, "xhdpi": 96, "xxhdpi": 144, "xxxhdpi": 192}
           base = "android/app/src/main/res"
 
@@ -99,7 +104,6 @@ jobs:
               redondo.save(os.path.join(carpeta, "ic_launcher_round.png"))
               print("icono", densidad, tam)
 
-          # se quitan los iconos adaptativos del template para que se use el balon
           for xml in ("ic_launcher.xml", "ic_launcher_round.xml"):
               ruta = os.path.join(base, "mipmap-anydpi-v26", xml)
               if os.path.exists(ruta):
@@ -107,22 +111,77 @@ jobs:
                   print("quitado", ruta)
           PY
 
-      - name: Compilar el APK
+      - name: Preparar la clave de firma
+        run: |
+          echo "${{ secrets.FIRMA_KEYSTORE_BASE64 }}" | base64 -d > firma.p12
+          ls -l firma.p12
+          if keytool -importkeystore \
+               -srckeystore firma.p12 -srcstoretype PKCS12 -srcstorepass "${{ secrets.FIRMA_PASSWORD }}" \
+               -destkeystore firma.jks -deststoretype JKS -deststorepass "${{ secrets.FIRMA_PASSWORD }}" \
+               -noprompt 2>/dev/null; then
+            echo "keystore convertido a JKS"
+          else
+            echo "se usara el PKCS12 directamente"
+          fi
+
+      - name: Compilar el APK de release
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew assembleRelease --no-daemon --stacktrace
 
-      - name: Preparar el APK para descargar
+      - name: Firmar y verificar el APK
+        run: |
+          BT=$(ls -d "${ANDROID_SDK_ROOT}"/build-tools/*/ | sort -V | tail -1)
+          echo "build-tools: $BT"
+          cd android/app/build/outputs/apk/release
+          ls -la
+          "$BT/zipalign" -p -f 4 app-release-unsigned.apk alineado.apk
+
+          PASS="${{ secrets.FIRMA_PASSWORD }}"
+          ALIAS="${{ secrets.FIRMA_ALIAS }}"
+          if [ -f "$GITHUB_WORKSPACE/firma.jks" ]; then
+            KS="$GITHUB_WORKSPACE/firma.jks"; KST="JKS"
+          else
+            KS="$GITHUB_WORKSPACE/firma.p12"; KST="PKCS12"
+          fi
+          echo "firmando con $KS ($KST)"
+
+          "$BT/apksigner" sign --ks "$KS" --ks-type "$KST" \
+            --ks-pass "pass:$PASS" --key-pass "pass:$PASS" --ks-key-alias "$ALIAS" \
+            --out Copa-Futbol-release.apk alineado.apk
+
+          echo "--- comprobacion de la firma ---"
+          "$BT/apksigner" verify --verbose --print-certs Copa-Futbol-release.apk
+          ls -lh Copa-Futbol-release.apk
+
+      - name: Preparar los APK para descargar
         run: |
           mkdir -p entrega
-          cp android/app/build/outputs/apk/debug/app-debug.apk entrega/Copa-Futbol.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk entrega/Copa-Futbol-debug.apk
+          cp android/app/build/outputs/apk/release/Copa-Futbol-release.apk entrega/Copa-Futbol-release.apk
           ls -lh entrega/
 
-      - name: Guardar el APK como artifact
+      - name: Guardar el APK firmado como artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Copa-Futbol-APK
-          path: entrega/Copa-Futbol.apk
+          name: Copa-Futbol-APK-firmado
+          path: entrega/Copa-Futbol-release.apk
           if-no-files-found: error
           retention-days: 90
+
+      - name: Publicar el APK en Releases (descarga directa)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v1.0.${{ github.run_number }}"
+          name: "Copa de Fútbol — APK firmado (build ${{ github.run_number }})"
+          body: |
+            APK **firmado** de la aplicación de resultados de la copa.
+
+            - Instálalo en Android activando "instalar apps de origen desconocido".
+            - Funciona sin internet: los datos van dentro de la app.
+            - Enlace directo de descarga:
+              https://github.com/royrafa010-bit/copa-futbol/releases/latest/download/Copa-Futbol-release.apk
+          files: entrega/Copa-Futbol-release.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
