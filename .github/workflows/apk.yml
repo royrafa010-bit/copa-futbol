@@ -155,10 +155,10 @@ jobs:
           "$BT/apksigner" verify --verbose --print-certs Copa-Futbol-release.apk
           ls -lh Copa-Futbol-release.apk
 
-      - name: Preparar los APK para descargar
+      - name: Preparar el APK para descargar
         run: |
           mkdir -p entrega
-          cp android/app/build/outputs/apk/debug/app-debug.apk entrega/Copa-Futbol-debug.apk
+          ls -lh android/app/build/outputs/apk/release/
           cp android/app/build/outputs/apk/release/Copa-Futbol-release.apk entrega/Copa-Futbol-release.apk
           ls -lh entrega/
 
