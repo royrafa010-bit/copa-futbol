@@ -1,5 +1,22 @@
 # Copa Nacional de Fútbol — Página de resultados
 
+## 📱 Aplicación móvil (APK firmado)
+
+**Descarga directa (siempre la última versión):**
+<https://github.com/royrafa010-bit/copa-futbol/releases/latest/download/Copa-Futbol-release.apk>
+
+- Se **compila y firma sola** en GitHub Actions cada vez que cambia la página (`index.html`, `app.js`, `admin.js`, `datos.js`, `estilos.css`, `manifest.json`, `sw.js` o `iconos/`).
+- **Funciona sin internet**: los datos van dentro de la app.
+- **Ícono**: balón sobre fondo verde (se genera desde `iconos/icono-1024.png`).
+- **Firma**: alias `copa`, clave PKCS12 (RSA 4096, 30 años) guardada en `firma/copa-futbol.p12` (ignorada por Git) y como secreto cifrado en el repositorio (`FIRMA_KEYSTORE_BASE64`, `FIRMA_PASSWORD`, `FIRMA_ALIAS`). Firma v1 + v2/v3.
+- **Importante**: si algún día publicas una **actualización**, tiene que ir firmada con **esta misma clave** o el teléfono no la aceptará. Guarda `firma/copa-futbol.p12` y la contraseña de `firma/LEEME-CLAVE-DE-FIRMA.txt` en un lugar seguro.
+- Para **Apklis**: sube ese APK. Para **iPhone**: instala la PWA (Safari → Compartir → Añadir a pantalla de inicio), porque iOS no acepta APK.
+
+### Ver los APK compilados
+
+Pestaña **Actions** del repositorio → última ejecución "Compilar APK de Android" → *Artifacts*.
+Las descargas públicas quedan en **Releases**.
+
 ## 🔗 Enlaces para compartir
 
 | Enlace | Dirección |
