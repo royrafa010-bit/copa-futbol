@@ -5,6 +5,10 @@ desktop.ini
 *.tmp
 *.log
 
+# APK compilado (se descarga desde GitHub Actions, no se guarda en el repositorio)
+*.apk
+*.aab
+
 # Respaldos y archivos de trabajo
 *.corrupto
 *.corrupto2
