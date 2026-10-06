@@ -4,7 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Copa Nacional de Fútbol — Resultados</title>
-  <link rel="stylesheet" href="estilos.css?v=7">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0b6b3a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Copa Fútbol">
+  <link rel="apple-touch-icon" href="iconos/icono-180.png">
+  <link rel="icon" href="iconos/icono-192.png">
+  <link rel="stylesheet" href="estilos.css?v=8">
 </head>
 <body>
 
@@ -144,9 +152,19 @@
   </datalist>
 
   <!-- El orden importa: datos → dibujo de la página → panel de administración.
-       El ?v=7 obliga al navegador a usar siempre la versión nueva de cada archivo. -->
-  <script src="datos.js?v=7"></script>
-  <script src="app.js?v=7"></script>
-  <script src="admin.js?v=7"></script>
+       El ?v=8 obliga al navegador a usar siempre la versión nueva de cada archivo. -->
+  <script src="datos.js?v=8"></script>
+  <script src="app.js?v=8"></script>
+  <script src="admin.js?v=8"></script>
+
+  <script>
+    // PWA: permite instalar la página como app y usarla sin internet.
+    // Dentro del APK (Capacitor) no hace falta: los archivos ya están en el teléfono.
+    if ("serviceWorker" in navigator && !window.Capacitor) {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("sw.js").catch(function () {});
+      });
+    }
+  </script>
 </body>
 </html>
